@@ -1,0 +1,123 @@
+{
+    "app": {
+        "title": "QuickBook",
+        "subtitle": "去中心化記帳",
+        "version": "v1.0.0 • 由 Google Drive 保護",
+        "welcome_back": "歡迎回來",
+        "sign_in_desc": "登入以存取您的加密帳本",
+        "sign_in_google": "使用 Google 登入",
+        "try_demo": "試用體驗模式",
+        "demo_mode_desc": "(無需帳號)"
+    },
+    "dashboard": {
+        "title": "儀表板",
+        "total_net_worth": "總資產淨值",
+        "welcome": "歡迎",
+        "t_plus_two": "T+2 在途資金",
+        "settlement_status": "交割狀態",
+        "total_in_flight": "總在途金額",
+        "no_pending": "無待交割項目",
+        "home": "首頁",
+        "budget": "預算",
+        "settings": "設定",
+        "splitwise": "分帳",
+        "invest": "投資",
+        "record": "記帳",
+        "family": "家庭",
+        "fund": "基金",
+        "futures": "期貨",
+        "tw_stock": "台股",
+        "us_stock": "美股",
+        "crypto": "加密貨幣",
+        "metal": "貴金屬",
+        "real_estate": "房地產"
+    },
+    "invest": {
+        "tab_short": "短期投機 (T+2)",
+        "tab_long": "長期投資",
+        "quick_trade": "快速記帳",
+        "symbol_label": "股票代號",
+        "symbol_placeholder": "例如: 2330.TW",
+        "pl_label": "淨損益",
+        "amount_placeholder": "金額",
+        "record_btn": "記錄交易",
+        "reflect_notice": "T+2 自動入帳",
+        "journal_title": "投資筆記",
+        "journal_desc": "在此追蹤長期持股、股利與撰寫投資心得。"
+    },
+    "budget": {
+        "title": "流向圖預算",
+        "desc": "視覺化桑基圖即將推出。拖拉水管來管理現金流。",
+        "canvas_placeholder": "[ 桑基圖畫布 ]"
+    },
+    "settings": {
+        "title": "設定",
+        "language": "語言",
+        "coming_soon": "設定功能即將推出",
+        "modules": "功能模組 (測試版)",
+        "budget_desc": "桑基圖現金流",
+        "splitwise_desc": "群組分帳",
+        "invest_desc": "股票與加密貨幣",
+        "family_desc": "家庭支出",
+        "fund_desc": "共同基金",
+        "futures_desc": "期貨交易",
+        "tw_stock_desc": "台灣股市",
+        "us_stock_desc": "美國市場",
+        "crypto_desc": "比特幣/以太幣/山寨幣",
+        "metal_desc": "黃金/白銀",
+        "real_estate_desc": "房地產資產",
+        "home_widgets": "首頁區塊",
+        "widget_asset_card": "總資產卡片",
+        "widget_t_plus_two": "T+2 交割看板",
+        "widget_transactions": "近期交易列表"
+    },
+    "splitwise": {
+        "title": "群組分帳",
+        "subtitle": "管理共同開支",
+        "new_group": "+ 新增群組",
+        "no_groups": "尚無群組",
+        "desc": "建立群組以透過 Google Drive 與親友分攤帳單。",
+        "you_owe": "欠款",
+        "you_are_owed": "應收"
+    },
+    "transaction": {
+        "new": "新增交易",
+        "expense": "支出",
+        "income": "收入",
+        "amount_label": "金額",
+        "amount_placeholder": "0.00",
+        "category_label": "分類",
+        "category_placeholder": "選擇分類",
+        "account_label": "帳戶",
+        "account_placeholder": "選擇帳戶",
+        "note_label": "備註 (選填)",
+        "note_placeholder": "輸入描述...",
+        "save_btn": "儲存交易",
+        "saving": "儲存中...",
+        "categories": {
+            "food": "飲食",
+            "transport": "交通",
+            "housing": "居住",
+            "entertainment": "娛樂",
+            "education": "教育",
+            "health": "醫療",
+            "other": "其他",
+            "salary": "薪資",
+            "bonus": "獎金",
+            "investment": "投資"
+        },
+        "accounts": {
+            "cash": "現金",
+            "bank": "銀行",
+            "credit": "信用卡"
+        }
+    },
+    "account_settings": {
+        "title": "帳戶設定",
+        "add_account": "新增帳戶",
+        "account_name": "帳戶名稱",
+        "account_type": "帳戶類型",
+        "initial_balance": "初始餘額",
+        "edit_account": "編輯帳戶"
+    }
+}

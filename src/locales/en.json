@@ -1,0 +1,48 @@
+{
+    "app": {
+        "title": "QuickBook",
+        "subtitle": "Decentralized Accounting",
+        "version": "v1.0.0 • Secured by Google Drive",
+        "welcome_back": "Welcome Back",
+        "sign_in_desc": "Sign in to access your encrypted ledger",
+        "sign_in_google": "Sign In with Google",
+        "try_demo": "Try Demo Mode",
+        "demo_mode_desc": "(No Account)"
+    },
+    "dashboard": {
+        "title": "Dashboard",
+        "total_net_worth": "Total Net Worth",
+        "welcome": "Welcome",
+        "t_plus_two": "T+2 Pending",
+        "settlement_status": "Settlement Status",
+        "total_in_flight": "Total In-Flight",
+        "no_pending": "No pending settlements",
+        "home": "Home",
+        "invest": "Invest",
+        "budget": "Budget",
+        "settings": "Settings"
+    },
+    "invest": {
+        "tab_short": "Short-term (T+2)",
+        "tab_long": "Long-term",
+        "quick_trade": "Quick Trade Entry",
+        "symbol_label": "Stock Symbol",
+        "symbol_placeholder": "e.g., 2330.TW",
+        "pl_label": "Net P/L",
+        "amount_placeholder": "Amount",
+        "record_btn": "Record Trade",
+        "reflect_notice": "Reflecting in T+2 automatically",
+        "journal_title": "Investment Journal",
+        "journal_desc": "Track long-term holdings, dividends, and write investment notes here."
+    },
+    "budget": {
+        "title": "Flowchart Budgeting",
+        "desc": "Visual Sankey diagrams coming soon. Manage your cash flow by dragging pipes to buckets.",
+        "canvas_placeholder": "[ Sankey Diagram Canvas ]"
+    },
+    "settings": {
+        "title": "Settings",
+        "language": "Language",
+        "coming_soon": "Settings coming soon"
+    }
+}

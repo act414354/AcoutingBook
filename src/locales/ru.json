@@ -1,0 +1,48 @@
+{
+    "app": {
+        "title": "QuickBook",
+        "subtitle": "Децентрализованный учет",
+        "version": "v1.0.0 • Защищено Google Drive",
+        "welcome_back": "С возвращением",
+        "sign_in_desc": "Войдите для доступа к зашифрованной книге",
+        "sign_in_google": "Войти через Google",
+        "try_demo": "Попробовать демо",
+        "demo_mode_desc": "(Без аккаунта)"
+    },
+    "dashboard": {
+        "title": "Дашборд",
+        "total_net_worth": "Чистая стоимость",
+        "welcome": "Добро пожаловать",
+        "t_plus_two": "T+2 Ожидание",
+        "settlement_status": "Статус расчетов",
+        "total_in_flight": "Всего в пути",
+        "no_pending": "Нет ожидающих расчетов",
+        "home": "Главная",
+        "invest": "Инвест",
+        "budget": "Бюджет",
+        "settings": "Настр."
+    },
+    "invest": {
+        "tab_short": "Краткосрок (T+2)",
+        "tab_long": "Долгосрок",
+        "quick_trade": "Быстрый ввод",
+        "symbol_label": "Тикер",
+        "symbol_placeholder": "Напр., GAZP",
+        "pl_label": "Чистая П/У",
+        "amount_placeholder": "Сумма",
+        "record_btn": "Записать",
+        "reflect_notice": "Автоматически отражается в T+2",
+        "journal_title": "Инвест журнал",
+        "journal_desc": "Отслеживайте долгосрочные активы и дивиденды."
+    },
+    "budget": {
+        "title": "Потоковый бюджет",
+        "desc": "Диаграммы Санкей скоро. Управляйте денежными потоками.",
+        "canvas_placeholder": "[ Холст Санкей ]"
+    },
+    "settings": {
+        "title": "Настройки",
+        "language": "Язык",
+        "coming_soon": "Настройки скоро"
+    }
+}

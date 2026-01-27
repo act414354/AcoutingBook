@@ -1,0 +1,48 @@
+{
+    "app": {
+        "title": "QuickBook",
+        "subtitle": "Contabilidad Descentralizada",
+        "version": "v1.0.0 • Protegido por Google Drive",
+        "welcome_back": "Bienvenido de nuevo",
+        "sign_in_desc": "Inicia sesión para acceder a tu libro mayor cifrado",
+        "sign_in_google": "Iniciar sesión con Google",
+        "try_demo": "Prueba el modo demo",
+        "demo_mode_desc": "(Sin cuenta)"
+    },
+    "dashboard": {
+        "title": "Tablero",
+        "total_net_worth": "Patrimonio Neto Total",
+        "welcome": "Bienvenido",
+        "t_plus_two": "T+2 Pendiente",
+        "settlement_status": "Estado de Liquidación",
+        "total_in_flight": "Total en Tránsito",
+        "no_pending": "No hay liquidaciones pendientes",
+        "home": "Inicio",
+        "invest": "Invertir",
+        "budget": "Presupuesto",
+        "settings": "Ajustes"
+    },
+    "invest": {
+        "tab_short": "Corto Plazo (T+2)",
+        "tab_long": "Largo Plazo",
+        "quick_trade": "Entrada Rápida",
+        "symbol_label": "Símbolo",
+        "symbol_placeholder": "Ej: AAPL",
+        "pl_label": "P/L Neto",
+        "amount_placeholder": "Cantidad",
+        "record_btn": "Registrar Operación",
+        "reflect_notice": "Se refleja automáticamente en T+2",
+        "journal_title": "Diario de Inversiones",
+        "journal_desc": "Rastrea tenencias a largo plazo, dividendos y notas aquí."
+    },
+    "budget": {
+        "title": "Presupuesto de Flujo",
+        "desc": "Diagramas Sankey visuales próximamente. Gestiona tu flujo de efectivo arrastrando tuberías.",
+        "canvas_placeholder": "[ Lienzo Diagrama Sankey ]"
+    },
+    "settings": {
+        "title": "Ajustes",
+        "language": "Idioma",
+        "coming_soon": "Ajustes próximamente"
+    }
+}

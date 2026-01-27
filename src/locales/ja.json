@@ -1,0 +1,48 @@
+{
+    "app": {
+        "title": "QuickBook",
+        "subtitle": "分散型家計簿",
+        "version": "v1.0.0 • Google Drive で保護",
+        "welcome_back": "お帰りなさい",
+        "sign_in_desc": "暗号化された台帳にアクセス",
+        "sign_in_google": "Google でログイン",
+        "try_demo": "デモモードを試す",
+        "demo_mode_desc": "(アカウント不要)"
+    },
+    "dashboard": {
+        "title": "ダッシュボード",
+        "total_net_worth": "純資産総額",
+        "welcome": "ようこそ",
+        "t_plus_two": "T+2 受渡待ち",
+        "settlement_status": "決済ステータス",
+        "total_in_flight": "受渡待ち総額",
+        "no_pending": "保留中の決済はありません",
+        "home": "ホーム",
+        "invest": "投資",
+        "budget": "予算",
+        "settings": "設定"
+    },
+    "invest": {
+        "tab_short": "短期トレード (T+2)",
+        "tab_long": "長期投資",
+        "quick_trade": "トレード入力",
+        "symbol_label": "銘柄コード",
+        "symbol_placeholder": "例: 7203.T",
+        "pl_label": "損益",
+        "amount_placeholder": "金額",
+        "record_btn": "取引を記録",
+        "reflect_notice": "T+2 で自動反映",
+        "journal_title": "投資ジャーナル",
+        "journal_desc": "長期保有、配当、投資メモをここで管理します。"
+    },
+    "budget": {
+        "title": "フローチャート予算",
+        "desc": "サンキーダイアグラム機能はまもなく公開されます。現金の流れを視覚的に管理しましょう。",
+        "canvas_placeholder": "[ サンキーダイアグラム キャンバス ]"
+    },
+    "settings": {
+        "title": "設定",
+        "language": "言語",
+        "coming_soon": "設定機能は準備中です"
+    }
+}

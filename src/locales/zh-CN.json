@@ -1,0 +1,48 @@
+{
+    "app": {
+        "title": "QuickBook",
+        "subtitle": "去中心化记账",
+        "version": "v1.0.0 • 由 Google Drive 保护",
+        "welcome_back": "欢迎回来",
+        "sign_in_desc": "登录以访问您的加密账本",
+        "sign_in_google": "使用 Google 登录",
+        "try_demo": "试用体验模式",
+        "demo_mode_desc": "(无需账号)"
+    },
+    "dashboard": {
+        "title": "仪表板",
+        "total_net_worth": "总资产净值",
+        "welcome": "欢迎",
+        "t_plus_two": "T+2 在途资金",
+        "settlement_status": "交割状态",
+        "total_in_flight": "总在途金额",
+        "no_pending": "无待交割项目",
+        "home": "首页",
+        "invest": "投资",
+        "budget": "预算",
+        "settings": "设置"
+    },
+    "invest": {
+        "tab_short": "短期投机 (T+2)",
+        "tab_long": "长期投资",
+        "quick_trade": "快速记账",
+        "symbol_label": "股票代码",
+        "symbol_placeholder": "例如: 2330.TW",
+        "pl_label": "净损益",
+        "amount_placeholder": "金额",
+        "record_btn": "记录交易",
+        "reflect_notice": "T+2 自动入账",
+        "journal_title": "投资笔记",
+        "journal_desc": "在此追踪长期持股、股息与撰写投资心得。"
+    },
+    "budget": {
+        "title": "流向图预算",
+        "desc": "可视化桑基图即将推出。拖拉水管来管理现金流。",
+        "canvas_placeholder": "[ 桑基图画布 ]"
+    },
+    "settings": {
+        "title": "设置",
+        "language": "语言",
+        "coming_soon": "设置功能即将推出"
+    }
+}

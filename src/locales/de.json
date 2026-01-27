@@ -1,0 +1,48 @@
+{
+    "app": {
+        "title": "QuickBook",
+        "subtitle": "Dezentrale Buchhaltung",
+        "version": "v1.0.0 • Gesichert durch Google Drive",
+        "welcome_back": "Willkommen zurück",
+        "sign_in_desc": "Melden Sie sich an, um auf Ihr verschlüsseltes Hauptbuch zuzugreifen",
+        "sign_in_google": "Mit Google anmelden",
+        "try_demo": "Demo-Modus ausprobieren",
+        "demo_mode_desc": "(Kein Konto)"
+    },
+    "dashboard": {
+        "title": "Dashboard",
+        "total_net_worth": "Gesamtnettovermögen",
+        "welcome": "Willkommen",
+        "t_plus_two": "T+2 Ausstehend",
+        "settlement_status": "Abwicklungsstatus",
+        "total_in_flight": "Gesamt im Transit",
+        "no_pending": "Keine ausstehenden Abwicklungen",
+        "home": "Start",
+        "invest": "Investieren",
+        "budget": "Budget",
+        "settings": "Einst."
+    },
+    "invest": {
+        "tab_short": "Kurzfristig (T+2)",
+        "tab_long": "Langfristig",
+        "quick_trade": "Schnelleingabe",
+        "symbol_label": "Symbol",
+        "symbol_placeholder": "z.B. SAP",
+        "pl_label": "Netto G/V",
+        "amount_placeholder": "Betrag",
+        "record_btn": "Handel aufzeichnen",
+        "reflect_notice": "Automatisch in T+2 reflektiert",
+        "journal_title": "Investment-Tagebuch",
+        "journal_desc": "Verfolgen Sie hier langfristige Bestände und Dividenden."
+    },
+    "budget": {
+        "title": "Flussdiagramm-Budget",
+        "desc": "Visuelle Sankey-Diagramme kommen bald.",
+        "canvas_placeholder": "[ Sankey-Diagramm Leinwand ]"
+    },
+    "settings": {
+        "title": "Einstellungen",
+        "language": "Sprache",
+        "coming_soon": "Einstellungen kommen bald"
+    }
+}

@@ -1,0 +1,48 @@
+{
+    "app": {
+        "title": "QuickBook",
+        "subtitle": "Comptabilité Décentralisée",
+        "version": "v1.0.0 • Sécurisé par Google Drive",
+        "welcome_back": "Bon retour",
+        "sign_in_desc": "Connectez-vous pour accéder à votre grand livre crypté",
+        "sign_in_google": "Se connecter avec Google",
+        "try_demo": "Essayer le mode démo",
+        "demo_mode_desc": "(Sans compte)"
+    },
+    "dashboard": {
+        "title": "Tableau de bord",
+        "total_net_worth": "Valeur Nette Totale",
+        "welcome": "Bienvenue",
+        "t_plus_two": "T+2 En attente",
+        "settlement_status": "État du règlement",
+        "total_in_flight": "Total en transit",
+        "no_pending": "Aucun règlement en attente",
+        "home": "Accueil",
+        "invest": "Investir",
+        "budget": "Budget",
+        "settings": "Paramètres"
+    },
+    "invest": {
+        "tab_short": "Court terme (T+2)",
+        "tab_long": "Long terme",
+        "quick_trade": "Saisie Rapide",
+        "symbol_label": "Symbole",
+        "symbol_placeholder": "Ex: MC.PA",
+        "pl_label": "P/L Net",
+        "amount_placeholder": "Montant",
+        "record_btn": "Enregistrer",
+        "reflect_notice": "Reflété en T+2 automatiquement",
+        "journal_title": "Journal d'Investissement",
+        "journal_desc": "Suivez vos détentions à long terme, dividendes et notes ici."
+    },
+    "budget": {
+        "title": "Budget de Flux",
+        "desc": "Diagrammes Sankey visuels bientôt disponibles. Gérez votre flux de trésorerie.",
+        "canvas_placeholder": "[ Canvas Diagramme Sankey ]"
+    },
+    "settings": {
+        "title": "Paramètres",
+        "language": "Langue",
+        "coming_soon": "Paramètres à venir"
+    }
+}

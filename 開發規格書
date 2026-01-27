@@ -1,0 +1,90 @@
+☁️ 專案名稱：去中心記帳軟體(速記 QuickBook)
+版本：v1.0 Final 定位：隱私優先、無後端 (Serverless)、模組化資產管理工具
+1. 系統架構設計 (System Architecture)
+1.1 核心架構 (Core)
+身分驗證：僅支援 Google OAuth 2.0。
+後端策略：無後端 (No Backend / Serverless)。App 直接與 Google Drive API 溝通。
+資料儲存：全數存於使用者個人的 Google Drive，採用 多資料源架構 (Multi-Source Architecture) 以隔離隱私。
+/MyFinanceApp/Private/：存放私人帳本 (加密/不分享)。
+/MyFinanceApp/Shared_{GroupID}/：存放共用帳本 (透過 Google Drive Share 功能協作)。
+1.2 帳本技術：鏈式快照結構 (Chained Ledger with Snapshots)
+為解決雲端讀取效能與資料衝突問題，採用類區塊鏈結構：
+檔案顆粒度：一筆交易 = 一個 JSON 檔案 (Transaction-as-a-File)。
+鏈結機制：每個檔案包含 prev_tx_id 指向前一筆交易。
+狀態快照 (Snapshot)：每個檔案包含當下的 balance_snapshot (資產餘額)，App 啟動時僅讀取最新一個檔案即可顯示首頁，實現秒開。
+修改機制 (Shadow Correction)：
+不可變原則 (Immutable)：嚴禁修改已存在的 JSON 檔案。
+修正邏輯：若需修改舊帳，系統於鏈的末端新增一筆 Adjustment_Block (修正區塊)，指向原始錯誤區塊。
+UI Merging：前端讀取時，自動合併「原始區塊」與「修正區塊」，使用者在介面上只會看到修正後的結果。
+2. 資料結構規範 (Data Schema)
+2.1 交易檔案 (JSON Payload)
+JSON
+{
+"id": "tx_20260127_001",
+"timestamp": 1769472000,
+"type": "expense", // 或 "income", "transfer", "adjustment"
+// 核心鏈結
+"prev_id": "tx_20260126_099",
+// 修正邏輯 (僅在 type="adjustment" 時出現)
+"ref_original_id": "tx_20260120_005",
+// 交易內容
+"payload": {
+"symbol": "2330",
+"amount": -500,
+"note": "午餐"
+},
+// 狀態快照 (由 App 計算後寫入)
+"snapshot": {
+"cash": 5000,
+"bank": 120000,
+"total_equity": 125000
+}
+}
+2.2 設定檔 (user_config.json)
+存於 /Private/Settings/，記錄：
+功能模組開關狀態。
+預算流程圖的節點座標 (Nodes & Edges positions)。
+智慧預設 (Smart Defaults) 的學習紀錄。
+3. 功能模組詳細規格 (Functional Specs)
+3.1 投資模組 (Investment Mode) - 雙流入口
+資料源：免費 API (如 Yahoo Finance) + 內建代碼對照表 (Offline Mapping) + 允許離線記帳。
+入口 A：短期投機 (Short-term)
+輸入：代碼、淨損益金額。
+邏輯：T+2 自動交割計算。資金於 T+0~T+1 顯示為「在途資金」，T+2 歸入餘額。
+UX：智慧預設資金帳戶。
+入口 B：中長期投資 (Long-term)
+輸入：買/賣/融資/融券、股數、單價、手續費。
+功能：
+投資筆記 (Journal)：時光軸介面，整合交易紀錄與純文字心得。
+信用交易：結算時手動輸入利息總額，顯示維持率警示。
+3.2 預算模組 (Flowchart Budgeting)
+UI 呈現：桑基圖 (Sankey Diagram) / 節點流向圖。
+操作：拖拉 (Drag & Drop) 分配收入水管至支出水桶。
+技術：需實作響應式座標 (Responsive Coordinates)，換裝置時圖表自動重排。
+3.3 分帳模組 (Splitwise-style Sharing)
+協作機制：基於 Google Drive 資料夾共用。
+隱私隔離：朋友僅擁有特定 Group 資料夾權限，無法讀取 User 私人帳戶。
+功能：群組債務結算圖、一鍵平帳 (Settle Up)。
+4. UI/UX 與流程設計
+4.1 導航與架構
+動態導航 (Dynamic Nav)：底部選單依據使用者在「設定」開啟的模組動態增減。
+Dashboard：
+總資產卡片。
+T+2 在途資金 Widget (核心亮點)。
+預算多條水位顯示。
+4.2 關鍵互動
+冷啟動引導：初次使用時，若無帳號資料，強制引導設定「預設資金帳戶」。
+離線支援：無網路時可完整記帳 (存於 Local Cache)，待連線後背景上傳至 Drive。
+5. 商業模式與安全性 (Monetization & Security)
+5.1 試用限制
+規則：限制 100 筆交易區塊 (Block Count < 100)。
+超額行為：App 進入唯讀模式 (Read-only)，禁止產生新區塊。
+5.2 付費驗證
+機制：原生商店驗證 (In-App Purchase)。
+iOS: StoreKit
+Android: Google Play Billing Library
+安全：不使用 本地檔案紀錄付費狀態 (避免被複製破解)，每次啟動 App 時向 Store API 驗證收據 (Receipt Validation)。
+6. 給開發團隊的執行建議 (Notes for Developers)
+優先實作 POC：請先驗證「讀取最後一個 JSON 檔並解析 Snapshot」的延遲時間，目標冷啟動 < 1 秒。
+前端框架：建議使用 Flutter 或 React Native，以利雙平台維護及繪製複雜圖表 (預算流向圖)。
+圖表庫選型：預算圖需使用支援 Drag & Drop 的 Graph Library (如 react-flow 或 fl_chart)。

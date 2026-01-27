@@ -1,0 +1,48 @@
+{
+    "app": {
+        "title": "QuickBook",
+        "subtitle": "Contabilidade Descentralizada",
+        "version": "v1.0.0 • Seguro pelo Google Drive",
+        "welcome_back": "Bem-vindo de volta",
+        "sign_in_desc": "Faça login para acessar seu livro razão criptografado",
+        "sign_in_google": "Entrar com Google",
+        "try_demo": "Modo de Demonstração",
+        "demo_mode_desc": "(Sem conta)"
+    },
+    "dashboard": {
+        "title": "Painel",
+        "total_net_worth": "Patrimônio Líquido Total",
+        "welcome": "Bem-vindo",
+        "t_plus_two": "T+2 Pendente",
+        "settlement_status": "Status de Liquidação",
+        "total_in_flight": "Total em Trânsito",
+        "no_pending": "Sem liquidações pendentes",
+        "home": "Início",
+        "invest": "Investir",
+        "budget": "Orçamento",
+        "settings": "Ajustes"
+    },
+    "invest": {
+        "tab_short": "Curto Prazo (T+2)",
+        "tab_long": "Longo Prazo",
+        "quick_trade": "Entrada Rápida",
+        "symbol_label": "Símbolo",
+        "symbol_placeholder": "Ex: PETR4",
+        "pl_label": "L/P Líquido",
+        "amount_placeholder": "Valor",
+        "record_btn": "Registrar",
+        "reflect_notice": "Refletido em T+2 automaticamente",
+        "journal_title": "Diário de Investimentos",
+        "journal_desc": "Acompanhe participações de longo prazo e dividendos."
+    },
+    "budget": {
+        "title": "Orçamento de Fluxo",
+        "desc": "Diagramas Sankey em breve.",
+        "canvas_placeholder": "[ Tela Sankey ]"
+    },
+    "settings": {
+        "title": "Configurações",
+        "language": "Idioma",
+        "coming_soon": "Configurações em breve"
+    }
+}
