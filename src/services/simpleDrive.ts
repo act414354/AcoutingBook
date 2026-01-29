@@ -79,8 +79,8 @@ const DEFAULT_SETTINGS: UserSettings = {
         income: ['salary', 'bonus', 'investment', 'other']
     },
     accounts: [
-        { id: 'acc_cash', name: 'Cash', type: 'cash' },
-        { id: 'acc_bank', name: 'Bank', type: 'bank' }
+        { id: 'acc_cash', name: 'Cash', type: 'cash', balance: 0, currency: 'TWD' },
+        { id: 'acc_bank', name: 'Bank', type: 'bank', balance: 0, currency: 'TWD' }
     ],
     modules: {
         invest: false,
@@ -108,7 +108,7 @@ const DEFAULT_SETTINGS: UserSettings = {
 export interface Transaction {
     id: string;
     timestamp: number;
-    type: 'expense' | 'income' | 'transfer' | 'adjustment';
+    type: 'expense' | 'income' | 'transfer' | 'adjustment' | 'exchange';
     prev_id: string | null; // 指向前一個區塊的 ID (Genesis Block 為 null)
     ref_original_id?: string; // For Adjustment Blocks
     payload: {
@@ -116,8 +116,10 @@ export interface Transaction {
         category: string; // For transfer, maybe 'Transfer'
         note: string;
         accountId: string; // Source Account
+        currency?: string; // Source currency
         // Transfer / Exchange Fields
         toAccountId?: string;
+        targetCurrency?: string; // Target currency for exchange
         exchangeRate?: number;
         targetAmount?: number;
 
