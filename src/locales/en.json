@@ -9,6 +9,14 @@
         "try_demo": "Try Demo Mode",
         "demo_mode_desc": "(No Account)"
     },
+    "common": {
+        "logout": "Sign Out",
+        "loading": "Loading...",
+        "error_load": "Failed to load",
+        "save": "Save",
+        "cancel": "Cancel",
+        "none": "None"
+    },
     "dashboard": {
         "title": "Dashboard",
         "total_net_worth": "Total Net Worth",
@@ -18,9 +26,23 @@
         "total_in_flight": "Total In-Flight",
         "no_pending": "No pending settlements",
         "home": "Home",
-        "invest": "Invest",
         "budget": "Budget",
-        "settings": "Settings"
+        "budget": "Budget",
+        "settings": "Settings",
+        "accounts": "Accounts",
+        "account_balances": "Account Balances",
+        "recent_activity": "Recent Activity",
+        "splitwise": "Splitwise",
+        "invest": "Invest",
+        "record": "Record",
+        "family": "Family",
+        "fund": "Funds",
+        "futures": "Futures",
+        "tw_stock": "TW Stock",
+        "us_stock": "US Stock",
+        "crypto": "Crypto",
+        "metal": "Metals",
+        "real_estate": "Real Estate"
     },
     "invest": {
         "tab_short": "Short-term (T+2)",
@@ -38,11 +60,116 @@
     "budget": {
         "title": "Flowchart Budgeting",
         "desc": "Visual Sankey diagrams coming soon. Manage your cash flow by dragging pipes to buckets.",
-        "canvas_placeholder": "[ Sankey Diagram Canvas ]"
+        "canvas_placeholder": "[ Sankey Diagram Canvas ]",
+        "flow_mode": "Flow Mode"
     },
     "settings": {
         "title": "Settings",
         "language": "Language",
-        "coming_soon": "Settings coming soon"
+        "coming_soon": "Settings coming soon",
+        "modules": "Modules (Beta)",
+        "budget_desc": "Sankey Cashflow",
+        "splitwise_desc": "Group Split",
+        "invest_desc": "Stocks & Crypto",
+        "family_desc": "Family Expense",
+        "fund_desc": "Mutual Funds",
+        "futures_desc": "Futures Trading",
+        "tw_stock_desc": "Taiwan Stock",
+        "us_stock_desc": "US Market",
+        "crypto_desc": "BTC/ETH/Alts",
+        "metal_desc": "Gold/Silver",
+        "real_estate_desc": "Properties",
+        "home_widgets": "Home Widgets",
+        "widget_asset_card": "Total Assets Card",
+        "widget_t_plus_two": "T+2 Board",
+        "widget_transactions": "Recent Transactions",
+        "manage_categories": "Manage Categories",
+        "add_category_placeholder": "New Category...",
+        "confirm_delete_category": "Are you sure you want to delete this category?",
+        "currency_settings": "Currency Settings",
+        "confirm_delete_currency": "Delete currency?"
+    },
+    "modules": {
+        "exchange_rate": "Exchange Rate & Multi-Currency"
+    },
+    "splitwise": {
+        "title": "Splitwise",
+        "subtitle": "Manage Shared Expenses",
+        "new_group": "+ New Group",
+        "no_groups": "No groups yet",
+        "desc": "Create groups to split bills with friends via Google Drive.",
+        "you_owe": "You owe",
+        "you_are_owed": "You are owed"
+    },
+    "transaction": {
+        "new": "New Transaction",
+        "expense": "Expense",
+        "income": "Income",
+        "amount_label": "Amount",
+        "amount_placeholder": "0.00",
+        "category_label": "Category",
+        "category_placeholder": "Select Category",
+        "account_label": "Account",
+        "account_placeholder": "Select Account",
+        "note_label": "Note (Optional)",
+        "note_placeholder": "Enter description...",
+        "save_btn": "Save Transaction",
+        "saving": "Saving...",
+        "categories": {
+            "food": "Food",
+            "transport": "Transport",
+            "housing": "Housing",
+            "entertainment": "Entertainment",
+            "education": "Education",
+            "health": "Health",
+            "other": "Other",
+            "salary": "Salary",
+            "bonus": "Bonus",
+            "investment": "Investment"
+        },
+        "accounts": {
+            "cash": "Cash",
+            "bank": "Bank",
+            "credit": "Credit Card",
+            "ewallet": "E-Wallet",
+            "securities": "Securities",
+            "exchange": "Exchange"
+        },
+        "transfer": "Transfer",
+        "to_account_label": "To Account",
+        "exchange_rate_label": "Exchange Rate",
+        "target_amount_label": "Target Amount",
+        "no_transactions": "No transactions yet."
+    },
+    "account_settings": {
+        "title": "Account Settings",
+        "add_account": "Add Account",
+        "account_name": "Account Name",
+        "account_type": "Account Type",
+        "initial_balance": "Initial Balance",
+        "edit_account": "Edit Accounts",
+        "view_mode": "View Mode",
+        "delete_account": "Delete",
+        "confirm_delete": "Are you sure you want to delete this account?",
+        "linked_account": "Linked Account",
+        "credit_settings": "Credit Card Settings",
+        "statement_day": "Statement Day",
+        "payment_day": "Payment Day",
+        "auto_payment_account": "Auto Payment Account",
+        "fee_settings": "Fee Settings",
+        "fee_discount": "Fee Discount",
+        "fee_discount_desc": "1 = 100% of original fee, 0.5 = 50% discount",
+        "fee_examples": "Fee Calculation Examples",
+        "buy_example": "Buy",
+        "sell_example": "Sell",
+        "min_fee": "Minimum Fee",
+        "min_fee_desc": "Taiwan default 20",
+        "confirm_delete_currency": "Delete currency?"
+    },
+    "ewallet_settings": {
+        "title": "E-Wallet Settings",
+        "auto_topup": "Auto Top-up",
+        "topup_threshold": "Threshold",
+        "topup_amount": "Top-up Amount"
     }
 }

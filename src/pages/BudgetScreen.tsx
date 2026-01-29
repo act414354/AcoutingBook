@@ -1,77 +1,21 @@
-import React, { useCallback } from 'react';
-import {
-    ReactFlow,
-    useNodesState,
-    useEdgesState,
-    addEdge,
-    Controls,
-    Background,
-    MarkerType
-} from '@xyflow/react';
-import type { Connection } from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
-
-// Initial Data Mock
-const initialNodes = [
-    {
-        id: 'income-1',
-        type: 'input',
-        data: { label: 'Salary +$5,000' },
-        position: { x: 150, y: 20 },
-        style: { backgroundColor: '#10b981', color: 'white', borderColor: '#059669', borderRadius: '12px', width: 150 }
-    },
-    {
-        id: 'exp-1',
-        data: { label: 'Rent -$2,000' },
-        position: { x: 20, y: 250 },
-        style: { backgroundColor: '#ef4444', color: 'white', borderColor: '#b91c1c', borderRadius: '12px' }
-    },
-    {
-        id: 'exp-2',
-        data: { label: 'Food -$800' },
-        position: { x: 180, y: 250 },
-        style: { backgroundColor: '#ef4444', color: 'white', borderColor: '#b91c1c', borderRadius: '12px' }
-    },
-    {
-        id: 'exp-3',
-        data: { label: 'Invest -$1,200' },
-        position: { x: 340, y: 250 },
-        style: { backgroundColor: '#3b82f6', color: 'white', borderColor: '#2563eb', borderRadius: '12px' }
-    },
-];
-
-const initialEdges = [
-    { id: 'e1-2', source: 'income-1', target: 'exp-1', animated: true, style: { strokeWidth: 8, stroke: '#10b981' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#10b981' } },
-    { id: 'e1-3', source: 'income-1', target: 'exp-2', animated: true, style: { strokeWidth: 4, stroke: '#10b981' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#10b981' } },
-    { id: 'e1-4', source: 'income-1', target: 'exp-3', animated: true, style: { strokeWidth: 5, stroke: '#3b82f6' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' } },
-];
+import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const BudgetScreen: React.FC = () => {
-    const [nodes, , onNodesChange] = useNodesState(initialNodes);
-    const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-
-    const onConnect = useCallback(
-        (params: Connection) => setEdges((eds) => addEdge({ ...params, animated: true }, eds)),
-        [setEdges],
-    );
+    const { t } = useTranslation();
 
     return (
-        <div className="h-[calc(100vh-200px)] w-full bg-gray-900 rounded-3xl overflow-hidden border border-gray-800 shadow-2xl relative">
-            <div className="absolute top-4 left-4 z-10 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-gray-700">
-                <span className="text-xs text-blue-400 font-mono">Flow Mode</span>
+        <div className="h-[calc(100vh-200px)] w-full bg-gray-900 rounded-3xl overflow-hidden border border-gray-800 shadow-2xl relative flex flex-col items-center justify-center p-6 text-center">
+            <div className="bg-blue-500/10 p-4 rounded-full mb-4">
+                <svg className="w-12 h-12 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                </svg>
             </div>
-
-            <ReactFlow
-                nodes={nodes}
-                edges={edges}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onConnect={onConnect}
-                fitView
-            >
-                <Background color="#374151" gap={16} />
-                <Controls className="bg-white/10 border-white/20 text-white fill-white" />
-            </ReactFlow>
+            <h2 className="text-xl font-bold text-white mb-2">{t('budget.title')}</h2>
+            <p className="text-gray-400 max-w-sm">{t('budget.desc')}</p>
+            <div className="mt-8 px-4 py-2 bg-blue-900/30 rounded-full border border-blue-500/30">
+                <span className="text-xs text-blue-400 font-mono tracking-wider">{t('budget.flow_mode')}</span>
+            </div>
         </div>
     );
 };

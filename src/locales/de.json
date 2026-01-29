@@ -20,7 +20,9 @@
         "home": "Start",
         "invest": "Investieren",
         "budget": "Budget",
-        "settings": "Einst."
+        "settings": "Einst.",
+        "accounts": "Konten",
+        "account_balances": "Kontostände"
     },
     "invest": {
         "tab_short": "Kurzfristig (T+2)",
@@ -43,6 +45,23 @@
     "settings": {
         "title": "Einstellungen",
         "language": "Sprache",
-        "coming_soon": "Einstellungen kommen bald"
+        "coming_soon": "Einstellungen kommen bald",
+        "confirm_delete_category": "Möchten Sie diese Kategorie wirklich löschen?",
+        "currency_settings": "Währungseinstellungen",
+        "confirm_delete_currency": "Währung löschen?"
+    },
+    "account_settings": {
+        "auto_topup": "Auto-Aufladung",
+        "topup_threshold": "Schwellenwert",
+        "topup_amount": "Aufladebetrag"
+    },
+    "modules": {
+        "exchange_rate": "Wechselkurs & Multi-Währung"
+    },
+    "transaction": {
+        "exchange": "Wechsel",
+        "accounts": {
+            "exchange": "Börse"
+        }
     }
 }

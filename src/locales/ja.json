@@ -20,7 +20,9 @@
         "home": "ホーム",
         "invest": "投資",
         "budget": "予算",
-        "settings": "設定"
+        "settings": "設定",
+        "accounts": "口座",
+        "account_balances": "口座残高"
     },
     "invest": {
         "tab_short": "短期トレード (T+2)",
@@ -43,6 +45,23 @@
     "settings": {
         "title": "設定",
         "language": "言語",
-        "coming_soon": "設定機能は準備中です"
+        "coming_soon": "設定機能は準備中です",
+        "confirm_delete_category": "このカテゴリを削除してもよろしいですか？",
+        "currency_settings": "通貨設定",
+        "confirm_delete_currency": "通貨を削除しますか？"
+    },
+    "account_settings": {
+        "auto_topup": "自動チャージ",
+        "topup_threshold": "残高不足時の閾値",
+        "topup_amount": "チャージ金額"
+    },
+    "modules": {
+        "exchange_rate": "為替レートと多通貨"
+    },
+    "transaction": {
+        "exchange": "両替",
+        "accounts": {
+            "exchange": "取引所"
+        }
     }
 }

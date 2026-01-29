@@ -7,45 +7,58 @@ interface TransactionFormProps {
     initialData?: Transaction | null;
     onSuccess: () => void;
     onCancel?: () => void;
-    embedded?: boolean; // If true, hide some modal-specific UI elements if needed, or adjust padding
+    embedded?: boolean;
 }
 
 export const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, onSuccess, onCancel, embedded = false }) => {
-    const { t } = useTranslation();
-    const [type, setType] = useState<'expense' | 'income'>('expense');
+    const { t, i18n } = useTranslation();
+    const [type, setType] = useState<'expense' | 'income' | 'transfer' | 'exchange'>('expense');
+
+    // Core Fields
     const [amount, setAmount] = useState('');
+    const [currency, setCurrency] = useState('TWD'); // Source Currency
     const [category, setCategory] = useState('');
     const [note, setNote] = useState('');
-    const [accountId, setAccountId] = useState('acc_cash');
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [accountId, setAccountId] = useState('');
 
-    // State for Categories and Accounts
+    // Transfer/Exchange Fields
+    const [toAccountId, setToAccountId] = useState('');
+    const [targetCurrency, setTargetCurrency] = useState('TWD'); // Target Currency
+    const [exchangeRate, setExchangeRate] = useState<string>('1.0');
+    const [targetAmount, setTargetAmount] = useState<string>('');
+
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
+
+    // Data
     const [availableCategories, setAvailableCategories] = useState<string[]>([]);
     const [availableAccounts, setAvailableAccounts] = useState<{ id: string, name: string, type: string }[]>([]);
 
-    const [showSuccess, setShowSuccess] = useState(false);
+    // Currency List (No BTC/ETH)
+    const MAX_CURRENCIES = ['TWD', 'USD', 'JPY', 'KRW', 'EUR', 'USDT', 'USDC'];
+
+    useEffect(() => {
+        // Init currency based on Language
+        if (i18n.language.includes('en')) setCurrency('USD');
+        else if (i18n.language.includes('ja')) setCurrency('JPY');
+        else if (i18n.language.includes('ko')) setCurrency('KRW');
+        else setCurrency('TWD');
+    }, [i18n.language]);
 
     useEffect(() => {
         const loadData = async () => {
             const settings = await simpleDriveService.getSettings();
 
-            // 1. Categories
-            const usageMap = await simpleDriveService.getCategoryUsage(type);
-            const sortedCategories = [...settings.categories[type]].sort((a, b) => {
-                const countA = usageMap.get(a) || 0;
-                const countB = usageMap.get(b) || 0;
-                return countB - countA;
-            });
-            setAvailableCategories(sortedCategories);
-
-            if ((!category || category === '') && !initialData && sortedCategories.length > 0) {
-                setCategory(sortedCategories[0]);
+            // Categories
+            const currentType = (type === 'transfer' || type === 'exchange') ? 'expense' : type;
+            setAvailableCategories(settings.categories[currentType] || []);
+            if (!category && settings.categories[currentType]?.length > 0) {
+                setCategory(settings.categories[currentType][0]);
             }
 
-            // 2. Accounts
+            // Accounts
             if (settings.accounts) {
                 setAvailableAccounts(settings.accounts);
-                // Default to first account if not set
                 if (!accountId && settings.accounts.length > 0) {
                     setAccountId(settings.accounts[0].id);
                 }
@@ -54,54 +67,43 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, o
         loadData();
     }, [type, initialData]);
 
+    // Handle Exchange Rate Calculation
     useEffect(() => {
-        if (initialData) {
-            setType(initialData.type as 'expense' | 'income');
-            setAmount(Math.abs(initialData.payload.amount).toString());
-            setCategory(initialData.payload.category);
-            setNote(initialData.payload.note);
-            if (initialData.payload.accountId) {
-                setAccountId(initialData.payload.accountId);
-            }
-        } else {
-            // New transaction defaults
-        }
-    }, [initialData]);
+        if (!amount || !exchangeRate) return;
+        const result = (parseFloat(amount) * parseFloat(exchangeRate));
+        setTargetAmount(result.toFixed(2));
+    }, [amount, exchangeRate]);
 
     const handleSubmit = async () => {
-        if (!amount || !category) return;
+        if (!amount) return;
+        if ((type === 'expense' || type === 'income') && !category) return;
+        if ((type === 'transfer' || type === 'exchange') && !toAccountId) return;
 
         setIsSubmitting(true);
         try {
-            if (initialData) {
-                await simpleDriveService.editTransaction(initialData, {
-                    amount: parseFloat(amount),
-                    category,
-                    note,
-                    accountId
-                });
-            } else {
-                await simpleDriveService.appendTransaction(
-                    type,
-                    parseFloat(amount),
-                    category,
-                    note,
-                    accountId
-                );
-            }
+            const finalCategory = (type === 'transfer' || type === 'exchange') ? 'Transfer' : category;
+
+            await simpleDriveService.appendTransaction(
+                type as any,
+                parseFloat(amount),
+                finalCategory,
+                note,
+                accountId,
+                {
+                    toAccountId: (type === 'transfer' || type === 'exchange') ? toAccountId : undefined,
+                    exchangeRate: (type === 'transfer' || type === 'exchange') ? parseFloat(exchangeRate) : undefined,
+                    targetAmount: (type === 'transfer' || type === 'exchange') ? parseFloat(targetAmount) : undefined,
+                    date: Date.now()
+                }
+            );
 
             setIsSubmitting(false);
             setShowSuccess(true);
-
             onSuccess();
-
-            // Reset form after success
             setTimeout(() => {
                 setAmount('');
                 setNote('');
                 setShowSuccess(false);
-                // Keep category or reset to first? 
-                // Let the effect handle category reset if needed or keep last used.
             }, 1200);
 
         } catch (error) {
@@ -111,168 +113,155 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, o
         }
     };
 
-    if (showSuccess) {
-        return (
-            <div className={`flex flex-col items-center justify-center p-6 ${embedded ? 'min-h-[300px]' : ''}`}>
-                <div className="bg-green-500/10 p-4 rounded-full mb-4 animate-bounce">
-                    <svg className="w-12 h-12 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                    </svg>
-                </div>
-                <p className="text-white font-bold text-lg">{t('transaction.success', 'Success!')}</p>
-            </div>
-        );
-    }
+    if (showSuccess) return (
+        <div className="flex flex-col items-center justify-center p-6 bg-gray-900 rounded-xl">
+            <div className="text-green-500 font-bold text-xl">Success!</div>
+        </div>
+    );
 
     return (
-        <div className="w-full">
+        <div className="w-full text-white">
             {/* Type Switcher */}
-            <div className="flex bg-gray-800 p-1 rounded-xl mb-6">
-                <button
-                    onClick={() => setType('expense')}
-                    className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${type === 'expense'
-                        ? 'bg-red-500/90 text-white shadow-lg shadow-red-500/20'
-                        : 'text-gray-400 hover:text-gray-200'
-                        }`}
-                >
-                    {t('transaction.expense')}
-                </button>
-                <button
-                    onClick={() => setType('income')}
-                    className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${type === 'income'
-                        ? 'bg-green-500/90 text-white shadow-lg shadow-green-500/20'
-                        : 'text-gray-400 hover:text-gray-200'
-                        }`}
-                >
-                    {t('transaction.income')}
-                </button>
+            <div className="grid grid-cols-4 gap-1 bg-gray-800 p-1 rounded-xl mb-6">
+                {(['expense', 'income', 'transfer', 'exchange'] as const).map(tKey => (
+                    <button
+                        key={tKey}
+                        onClick={() => setType(tKey)}
+                        className={`py-2 text-xs font-bold rounded-lg transition-all capitalize ${type === tKey
+                            ? 'bg-blue-600 text-white'
+                            : 'text-gray-400 hover:text-gray-200'
+                            }`}
+                    >
+                        {t(`transaction.${tKey}`, tKey)}
+                    </button>
+                ))}
             </div>
 
-            {/* Amount Input */}
-            <div className="mb-6">
-                <label className="block text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">{t('transaction.amount_label')}</label>
-                <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xl">$</span>
+            {/* Amount & Currency */}
+            <div className="flex gap-4 mb-6">
+                <div className="flex-1 relative">
+                    <label className="block text-xs font-medium text-gray-500 mb-1">AMOUNT</label>
                     <input
-                        type="text"
-                        inputMode="decimal"
+                        type="number"
                         value={amount}
-                        onChange={(e) => {
-                            const val = e.target.value;
-                            if (/^[0-9+\-.\s]*$/.test(val)) {
-                                setAmount(val);
-                            }
-                        }}
-                        onBlur={() => {
-                            try {
-                                if (!amount) return;
-                                if (/[+\-]/.test(amount)) {
-                                    // eslint-disable-next-line
-                                    const result = new Function('return ' + amount)();
-                                    if (!isNaN(result) && isFinite(result)) {
-                                        setAmount(Math.abs(result).toString());
-                                    }
-                                }
-                            } catch (e) { }
-                        }}
-                        placeholder={t('transaction.amount_placeholder')}
-                        className="w-full bg-gray-800 border-2 border-transparent focus:border-blue-500 rounded-2xl py-4 pl-10 pr-4 text-white text-3xl font-bold outline-none transition-all placeholder-gray-600"
+                        onChange={e => setAmount(e.target.value)}
+                        className="w-full bg-gray-800 border-2 border-transparent focus:border-blue-500 rounded-xl py-3 px-4 text-2xl font-bold outline-none"
+                        placeholder="0.00"
                     />
                 </div>
-            </div>
-
-            {/* Account & Category */}
-            <div className="grid grid-cols-2 gap-4 mb-4">
-                {/* Account Selector */}
-                <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">{t('transaction.account_label', 'Account')}</label>
-                    <div className="relative">
-                        <select
-                            value={accountId}
-                            onChange={(e) => setAccountId(e.target.value)}
-                            className="w-full bg-gray-800 border border-gray-700 rounded-xl p-4 pr-8 text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none cursor-pointer text-sm"
-                        >
-                            {availableAccounts.map((acc) => (
-                                <option key={acc.id} value={acc.id}>
-                                    {t(`transaction.accounts.${acc.type}`, { defaultValue: acc.name })}
-                                </option>
-                            ))}
-                        </select>
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Category Selector */}
-                <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">{t('transaction.category_label')}</label>
-                    <div className="relative">
-                        <select
-                            value={category}
-                            onChange={(e) => setCategory(e.target.value)}
-                            className="w-full bg-gray-800 border border-gray-700 rounded-xl p-4 pr-8 text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none cursor-pointer text-sm"
-                        >
-                            <option value="" disabled>{t('transaction.category_placeholder')}</option>
-                            {availableCategories.map((cat) => (
-                                <option key={cat} value={cat}>
-                                    {t(`transaction.categories.${cat.toLowerCase()}`, { defaultValue: cat })}
-                                </option>
-                            ))}
-                        </select>
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-                    </div>
+                <div className="w-24">
+                    <label className="block text-xs font-medium text-gray-500 mb-1">CURR</label>
+                    <select
+                        value={currency}
+                        onChange={e => {
+                            setCurrency(e.target.value);
+                            // Auto-set target currency match if not exchange
+                            if (type !== 'exchange') setTargetCurrency(e.target.value);
+                        }}
+                        className="w-full h-[54px] bg-gray-800 rounded-xl px-2 font-bold outline-none"
+                    >
+                        {MAX_CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
                 </div>
             </div>
 
-            {/* Note */}
-            <div className="mb-8">
-                <label className="block text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">{t('transaction.note_label')}</label>
+            {/* Source Account */}
+            <div className="mb-4">
+                <label className="block text-xs font-medium text-gray-500 mb-1">ACCOUNT</label>
+                <select
+                    value={accountId}
+                    onChange={e => setAccountId(e.target.value)}
+                    className="w-full bg-gray-800 rounded-xl p-3 outline-none"
+                >
+                    {availableAccounts.map(acc => (
+                        <option key={acc.id} value={acc.id}>{acc.name}</option>
+                    ))}
+                </select>
+            </div>
+
+            {/* Conditional Fields */}
+            {(type === 'transfer' || type === 'exchange') ? (
+                <div className="bg-gray-800/50 p-4 rounded-xl mb-4 border border-gray-700">
+                    <label className="block text-xs font-bold text-blue-400 mb-2">TARGET ({type.toUpperCase()})</label>
+
+                    <div className="mb-3">
+                        <label className="block text-xs text-gray-500 mb-1">TO ACCOUNT</label>
+                        <select
+                            value={toAccountId}
+                            onChange={e => setToAccountId(e.target.value)}
+                            className="w-full bg-gray-800 rounded-xl p-3 outline-none"
+                        >
+                            <option value="">Select Account</option>
+                            {availableAccounts.filter(a => a.id !== accountId).map(acc => (
+                                <option key={acc.id} value={acc.id}>{acc.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div>
+                            <label className="block text-xs text-gray-500 mb-1">TARGET CURR</label>
+                            <select
+                                value={targetCurrency}
+                                onChange={e => setTargetCurrency(e.target.value)}
+                                className="w-full bg-gray-800 rounded-xl p-3 outline-none font-bold"
+                            >
+                                {MAX_CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs text-gray-500 mb-1">RATE</label>
+                            <input
+                                type="number"
+                                value={exchangeRate}
+                                onChange={e => setExchangeRate(e.target.value)}
+                                className="w-full bg-gray-800 rounded-xl p-3 outline-none font-bold"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs text-gray-500 mb-1">FINAL AMOUNT</label>
+                        <input
+                            type="number"
+                            value={targetAmount}
+                            onChange={e => setTargetAmount(e.target.value)}
+                            className="w-full bg-gray-900 rounded-xl p-3 outline-none font-bold border border-gray-600"
+                        />
+                    </div>
+                </div>
+            ) : (
+                <div className="mb-4">
+                    <label className="block text-xs font-medium text-gray-500 mb-1">CATEGORY</label>
+                    <select
+                        value={category}
+                        onChange={e => setCategory(e.target.value)}
+                        className="w-full bg-gray-800 rounded-xl p-3 outline-none"
+                    >
+                        {availableCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                </div>
+            )}
+
+            <div className="mb-6">
+                <label className="block text-xs font-medium text-gray-500 mb-1">NOTE</label>
                 <input
                     type="text"
                     value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder={t('transaction.note_placeholder')}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-xl p-4 text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                    onChange={e => setNote(e.target.value)}
+                    className="w-full bg-gray-800 rounded-xl p-3 outline-none"
+                    placeholder="Optional note..."
                 />
             </div>
 
-            {/* Submit Action */}
             <button
                 onClick={handleSubmit}
-                disabled={isSubmitting || !amount || !category}
-                className={`
-                    w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center transition-all
-                    ${isSubmitting
-                        ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30 hover:scale-[1.02] active:scale-95'
-                    }
-                `}
+                disabled={isSubmitting}
+                className="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-500/20"
             >
-                {isSubmitting ? (
-                    <svg className="animate-spin h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                ) : (
-                    t('transaction.save_btn')
-                )}
+                {isSubmitting ? t('transaction.saving', 'Saving...') : t('transaction.save_btn', 'Save Transaction')}
             </button>
-
-            {onCancel && (
-                <button
-                    onClick={onCancel}
-                    className="w-full mt-3 py-3 text-gray-400 hover:text-white transition-colors"
-                >
-                    {t('common.cancel', 'Cancel')}
-                </button>
-            )}
+            {onCancel && <button onClick={onCancel} className="w-full py-3 text-gray-500 mt-2">Cancel</button>}
         </div>
     );
 };

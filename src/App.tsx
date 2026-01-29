@@ -16,7 +16,9 @@ import { ModuleSettings } from './components/settings/ModuleSettings';
 import { HomeWidgetSettings } from './components/settings/HomeWidgetSettings';
 import { SplitwiseScreen } from './pages/SplitwiseScreen';
 import { RecordScreen } from './pages/RecordScreen';
+import { AccountsScreen } from './pages/AccountsScreen'; // Import
 import { AccountSettings } from './components/settings/AccountSettings'; // Import
+import { CurrencySettings } from './components/settings/CurrencySettings'; // Import
 import { AccountBalanceCard } from './components/dashboard/AccountBalanceCard'; // Import
 import './index.css';
 
@@ -139,7 +141,6 @@ const Dashboard = () => {
           src={user?.imageUrl || ''}
           alt="Profile"
           className="w-8 h-8 rounded-full border border-gray-700"
-          onClick={logout}
         />
       </div>
 
@@ -162,10 +163,7 @@ const Dashboard = () => {
             {/* 1.5 T+2 Widget */}
             {settings?.homeWidgets?.t_plus_two !== false && (
               <TPlusTwoWidget
-                pendingSettlements={[
-                  { date: '2026-01-29', amount: 50000, description: 'Sell TSLA' },
-                  { date: '2026-01-29', amount: -650, description: 'Transaction Fee' },
-                ]}
+                pendingSettlements={[]}
               />
             )}
 
@@ -189,6 +187,8 @@ const Dashboard = () => {
           />
         )}
 
+        {activeTab === 'accounts' && <AccountsScreen lastRefresh={refreshTrigger} />}
+
         {activeTab === 'invest' && <InvestScreen />}
 
         {activeTab === 'budget' && <BudgetScreen />}
@@ -205,6 +205,24 @@ const Dashboard = () => {
 
         {activeTab === 'settings' && (
           <div className="space-y-6">
+            {/* User Profile Section */}
+            <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 flex items-center space-x-4">
+              {user?.imageUrl ? (
+                <img src={user.imageUrl} alt="Profile" className="w-16 h-16 rounded-full border-2 border-blue-500" />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-xl">
+                  {user?.name?.charAt(0) || 'U'}
+                </div>
+              )}
+              <div>
+                <h3 className="text-white font-bold text-lg">{user?.name}</h3>
+                <p className="text-gray-400 text-sm">{user?.email}</p>
+                <span className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] bg-green-500/10 text-green-400 border border-green-500/20">
+                  Pro User
+                </span>
+              </div>
+            </div>
+
             <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
               <h3 className="text-gray-300 font-semibold mb-4">{t('settings.language')}</h3>
               <LanguageSwitcher />
@@ -214,13 +232,23 @@ const Dashboard = () => {
 
             <ModuleSettings />
 
+            <CurrencySettings />
+
             <HomeWidgetSettings />
 
             <CategorySettings />
 
-            <div className="text-center text-gray-500 text-sm py-4">
-              {t('settings.coming_soon')}
-            </div>
+            {/* Logout Button */}
+            <button
+              onClick={logout}
+              className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 mt-8"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              {t('common.logout', 'Sign Out')}
+            </button>
+            <div className="h-4"></div>
           </div>
         )}
       </div>

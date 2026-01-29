@@ -20,7 +20,9 @@
         "home": "首页",
         "invest": "投资",
         "budget": "预算",
-        "settings": "设置"
+        "settings": "设置",
+        "accounts": "账户",
+        "account_balances": "账户余额"
     },
     "invest": {
         "tab_short": "短期投机 (T+2)",
@@ -43,6 +45,23 @@
     "settings": {
         "title": "设置",
         "language": "语言",
-        "coming_soon": "设置功能即将推出"
+        "coming_soon": "设置功能即将推出",
+        "confirm_delete_category": "确定要删除此分类吗？",
+        "currency_settings": "币种设置",
+        "confirm_delete_currency": "确定要删除此币种吗？"
+    },
+    "account_settings": {
+        "auto_topup": "自动充值",
+        "topup_threshold": "余额低于",
+        "topup_amount": "充值金额"
+    },
+    "modules": {
+        "exchange_rate": "汇率与多币种"
+    },
+    "transaction": {
+        "exchange": "汇率兑换",
+        "accounts": {
+            "exchange": "交易所"
+        }
     }
 }

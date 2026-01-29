@@ -36,15 +36,19 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ onSuccess, onEdit, l
                 </div>
             </div>
 
-            {/* Floating Action Button (FAB) */}
-            <button
-                onClick={() => setIsModalOpen(true)}
-                className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom)+1rem)] right-4 w-14 h-14 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-full shadow-lg shadow-blue-500/40 flex items-center justify-center text-white transition-transform hover:scale-110 active:scale-95 z-30"
-            >
-                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-            </button>
+            {/* Floating Action Button (FAB) Container */}
+            <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom)+1rem)] left-0 right-0 flex justify-center pointer-events-none z-30">
+                <div className="w-full max-w-[480px] relative px-4">
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="absolute right-4 bottom-0 w-14 h-14 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-full shadow-lg shadow-blue-500/40 flex items-center justify-center text-white transition-transform hover:scale-110 active:scale-95 pointer-events-auto"
+                    >
+                        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
 
             {/* Add Transaction Modal */}
             <TransactionModal

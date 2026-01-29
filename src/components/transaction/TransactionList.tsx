@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { simpleDriveService } from '../../services/simpleDrive';
+import { useTranslation } from 'react-i18next';
 import type { Transaction } from '../../services/simpleDrive';
 
 interface TransactionListProps {
@@ -8,7 +9,7 @@ interface TransactionListProps {
 }
 
 export const TransactionList: React.FC<TransactionListProps> = ({ onEdit, lastRefresh }) => {
-    // const { t } = useTranslation();
+    const { t } = useTranslation();
     const [history, setHistory] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -29,20 +30,20 @@ export const TransactionList: React.FC<TransactionListProps> = ({ onEdit, lastRe
     };
 
     if (loading && history.length === 0) {
-        return <div className="text-center text-gray-500 py-4">Loading...</div>;
+        return <div className="text-center text-gray-500 py-4">{t('common.loading')}</div>;
     }
 
     if (history.length === 0) {
         return (
             <div className="text-center text-gray-500 py-8 text-sm">
-                No transactions yet.
+                {t('transaction.no_transactions')}
             </div>
         );
     }
 
     return (
         <div className="space-y-4">
-            <h3 className="text-gray-400 font-semibold text-sm uppercase tracking-wider px-2">Recent Activity</h3>
+            <h3 className="text-gray-400 font-semibold text-sm uppercase tracking-wider px-2">{t('dashboard.recent_activity')}</h3>
             <div className="space-y-3">
                 {history.map((tx) => (
                     <div key={tx.id} className="bg-gray-800/50 rounded-xl p-4 flex justify-between items-center border border-gray-700/50">
@@ -60,7 +61,9 @@ export const TransactionList: React.FC<TransactionListProps> = ({ onEdit, lastRe
                                 )}
                             </div>
                             <div>
-                                <div className="text-white font-bold">{tx.payload.category}</div>
+                                <div className="text-white font-bold">
+                                    {t(`transaction.categories.${tx.payload.category.toLowerCase()}`, tx.payload.category)}
+                                </div>
                                 <div className="text-gray-500 text-xs">
                                     {new Date(tx.timestamp).toLocaleDateString()}
                                     {tx.payload.note && ` • ${tx.payload.note}`}

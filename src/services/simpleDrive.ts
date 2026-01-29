@@ -28,11 +28,31 @@ export interface UserSettings {
     accounts: {
         id: string;
         name: string;
-        type: 'cash' | 'bank' | 'credit';
+        type: 'cash' | 'bank' | 'credit' | 'ewallet' | 'securities' | 'exchange';
         balance: number;
+        currency: string; // Default 'TWD'
+        properties?: {
+            linkedAccountId?: string;
+            creditCard?: {
+                statementDay: number;
+                paymentDay: number;
+                autoPayAccountId?: string;
+                businessDayLogic: 'delay' | 'advance'; // 遇假日順延或提前
+            };
+            eWallet?: {
+                autoTopUp: boolean;
+                threshold?: number;
+                amount?: number;
+                topUpFromAccountId?: string;
+            };
+            securities?: {
+                feeDiscount: number; // User input: 1 = 0.1, 2.8 = 0.28
+                minFee: number;
+            };
+        };
     }[];
     modules: {
-        invest: boolean; // Keeping for backward compatibility if needed, or mapped to Stocks
+        invest: boolean;
         budget: boolean;
         splitwise: boolean;
         family: boolean;
@@ -43,28 +63,29 @@ export interface UserSettings {
         crypto: boolean;
         metal: boolean;
         real_estate: boolean;
+        exchange_rate: boolean; // New Module
     };
     homeWidgets: {
         asset_card: boolean;
         t_plus_two: boolean;
         transactions: boolean;
     };
-    // Future settings can go here
+    customCurrencies: string[]; // New: User defined currencies
 }
 
 const DEFAULT_SETTINGS: UserSettings = {
     categories: {
-        expense: ['Food', 'Transport', 'Housing', 'Entertainment', 'Education', 'Health', 'Other'],
-        income: ['Salary', 'Bonus', 'Investment', 'Other']
+        expense: ['food', 'transport', 'housing', 'entertainment', 'education', 'health', 'other'],
+        income: ['salary', 'bonus', 'investment', 'other']
     },
     accounts: [
-        { id: 'acc_cash', name: 'Cash', type: 'cash', balance: 0 },
-        { id: 'acc_bank', name: 'Bank', type: 'bank', balance: 0 }
+        { id: 'acc_cash', name: 'Cash', type: 'cash' },
+        { id: 'acc_bank', name: 'Bank', type: 'bank' }
     ],
     modules: {
-        invest: false, // Legacy, disabled by default
-        budget: false, // Hidden by default per new request
-        splitwise: true, // Visible by default
+        invest: false,
+        budget: false,
+        splitwise: true,
         family: false,
         fund: false,
         futures: false,
@@ -72,13 +93,15 @@ const DEFAULT_SETTINGS: UserSettings = {
         us_stock: false,
         crypto: false,
         metal: false,
-        real_estate: false
+        real_estate: false,
+        exchange_rate: false // Default off
     },
     homeWidgets: {
         asset_card: true,
         t_plus_two: true,
         transactions: true
-    }
+    },
+    customCurrencies: ['TWD', 'USD', 'JPY'] // Default currencies
 };
 
 // 區塊鏈核心結構
@@ -90,14 +113,19 @@ export interface Transaction {
     ref_original_id?: string; // For Adjustment Blocks
     payload: {
         amount: number;
-        category: string;
+        category: string; // For transfer, maybe 'Transfer'
         note: string;
-        accountId: string; // New Account Field
+        accountId: string; // Source Account
+        // Transfer / Exchange Fields
+        toAccountId?: string;
+        exchangeRate?: number;
+        targetAmount?: number;
+
         date?: number; // Optional override for transaction date
     };
     snapshot: {
-        totalAssets: number; // 累計總資產
-        accounts: Record<string, number>; // 個別帳戶餘額 { accountId: balance }
+        totalAssets: Record<string, number>; // Changed to Multi-Currency Map
+        accounts: Record<string, Record<string, number>>; // { accountId: { currency: amount } }
     };
 }
 
@@ -140,10 +168,10 @@ class SimpleDriveService {
                 timestamp: Date.now(),
                 type: 'adjustment',
                 prev_id: null,
-                payload: { amount: 0, category: 'System', note: 'Guest Mode Start', accountId: 'acc_cash' },
+                payload: { amount: 0, currency: 'TWD', category: 'System', note: 'Guest Mode Start', accountId: 'acc_cash' },
                 snapshot: {
-                    totalAssets: 0,
-                    accounts: { 'acc_cash': 0, 'acc_bank': 0 }
+                    totalAssets: {},
+                    accounts: {}
                 }
             };
             this.mockChainCache.set(this.latestBlock.id, this.latestBlock);
@@ -305,13 +333,51 @@ class SimpleDriveService {
     // Core Ledger Logic (Blockchain-like)
     // -------------------------------------------------------------
 
-    // 1. 同步最新的區塊 (Mock: 在真實 Drive 環境應搜尋 lastModified 最新的 JSON)
+    // 1. 同步最新的區塊 (真實 Drive 搜尋)
     async syncLatestBlock(): Promise<Transaction | null> {
         if (this.isGuestMode) return this.latestBlock;
 
-        // TODO: searchDriveFiles ordered by createdTime desc limit 1
-        console.log("Syncing latest block from Drive...");
-        // 此處暫時返回 null (代表新帳本)，後續實作真實搜尋
+        try {
+            console.log("Syncing latest block from Drive...");
+            const folderId = await this.ensureAppFolder();
+
+            // Search for transaction blocks
+            // Note: properties query syntax: "properties has { key='type' and value='transaction_block' }"
+            const query = `'${folderId}' in parents and properties has { key='type' and value='transaction_block' } and trashed=false`;
+
+            const response = await gapi.client.drive.files.list({
+                q: query,
+                orderBy: 'createdTime desc',
+                pageSize: 1,
+                fields: 'files(id, name, createdTime)'
+            });
+
+            const files = response.result.files || [];
+
+            if (files.length > 0) {
+                const latestFile = files[0];
+                console.log("Found latest block file:", latestFile.name);
+
+                // Download content
+                const contentRes = await gapi.client.drive.files.get({
+                    fileId: latestFile.id!,
+                    alt: 'media'
+                });
+
+                const blockData = contentRes.result as unknown as Transaction;
+                // Basic validation
+                if (blockData && blockData.id && blockData.snapshot) {
+                    this.latestBlock = blockData;
+                    console.log("Synced latest block state:", this.latestBlock.snapshot);
+                    return this.latestBlock;
+                }
+            } else {
+                console.log("No existing blockchain found. Starting fresh.");
+            }
+        } catch (error) {
+            console.error("Sync failed:", error);
+        }
+
         return null;
     }
 
@@ -352,46 +418,133 @@ class SimpleDriveService {
             }
 
             // Move to previous
+            if (!currentBlock.prev_id) break; // Genesis block reached
+
             if (this.isGuestMode) {
-                currentBlock = this.mockChainCache.get(currentBlock.prev_id || '') || null;
+                currentBlock = this.mockChainCache.get(currentBlock.prev_id) || null;
             } else {
-                // Real implementation would fetch from Drive
-                break;
+                // Real implementation: Fetch from Cache or Drive
+                currentBlock = await this.fetchBlockByUUID(currentBlock.prev_id);
             }
         }
 
         return history;
     }
 
+    // Helper: Fetch a specific block by ID (from Cache or Drive)
+    private async fetchBlockByUUID(uuid: string): Promise<Transaction | null> {
+        // 1. Check Cache
+        if (this.mockChainCache.has(uuid)) {
+            return this.mockChainCache.get(uuid)!;
+        }
+
+        // 2. Fetch from Drive
+        try {
+            const folderId = await this.ensureAppFolder();
+            // Filename format: tx_{timestamp}_{uuid}.json
+            // We search by "name contains uuid" to be safe
+            const query = `'${folderId}' in parents and name contains '${uuid}' and trashed=false`;
+
+            const response = await gapi.client.drive.files.list({
+                q: query,
+                fields: 'files(id, name)',
+                pageSize: 1
+            });
+
+            const files = response.result.files || [];
+            if (files.length > 0) {
+                const fileId = files[0].id!;
+                const contentRes = await gapi.client.drive.files.get({
+                    fileId: fileId,
+                    alt: 'media'
+                });
+
+                const block = contentRes.result as unknown as Transaction;
+                if (block && block.id === uuid) {
+                    this.mockChainCache.set(uuid, block); // Cache it
+                    return block;
+                }
+            }
+        } catch (e) {
+            console.error(`Failed to fetch block ${uuid}:`, e);
+        }
+
+        return null;
+    }
+
     // 3. 修改交易 (Shadow Correction)
     async editTransaction(originalTx: Transaction, newPayload: Transaction['payload']): Promise<Transaction> {
-        // Calculate Diff (New - Old) for correct Asset Snapshot
-        const snapshot = this.latestBlock?.snapshot || { totalAssets: 0, accounts: {} };
-        const lastSnapshot = snapshot.totalAssets || 0;
-        const lastAccounts = snapshot.accounts || {};
+        // Simplified Logic: Just append an Adjustment Block that reverses old and applies new
+        // Since Diff logic is complex with currency changes in Multi-currency 2D map.
 
-        const oldAmountSigned = originalTx.type === 'expense' ? -Math.abs(originalTx.payload.amount) : Math.abs(originalTx.payload.amount);
-        const newAmountSigned = originalTx.type === 'expense' ? -Math.abs(newPayload.amount) : Math.abs(newPayload.amount);
+        // 1. Revert Old (Inverted logic of Append)
+        const prevBlock = this.latestBlock;
+        const prevSnapshot = prevBlock ? prevBlock.snapshot : { totalAssets: {}, accounts: {} };
+        const newAccounts: Record<string, Record<string, number>> = JSON.parse(JSON.stringify(prevSnapshot.accounts || {}));
+        const newTotalAssets: Record<string, number> = { ...prevSnapshot.totalAssets };
 
-        const diff = newAmountSigned - oldAmountSigned;
-        const newTotalAssets = lastSnapshot + diff;
+        const revert = (tx: Transaction) => {
+            const qty = tx.payload.amount;
+            const curr = tx.payload.currency;
+            const acc = tx.payload.accountId;
+            const type = tx.type;
 
-        // Account Balance Adjustments
-        // NOTE: If account changed, we revert old account and apply to new account
-        const oldAccountId = originalTx.payload.accountId || 'acc_cash'; // fallback
-        const newAccountId = newPayload.accountId;
+            if (type === 'expense') {
+                // Was -qty, so +qty
+                newAccounts[acc][curr] = (newAccounts[acc][curr] || 0) + qty;
+                newTotalAssets[curr] = (newTotalAssets[curr] || 0) + qty;
+            } else if (type === 'income') {
+                // Was +qty, so -qty
+                newAccounts[acc][curr] = (newAccounts[acc][curr] || 0) - qty;
+                newTotalAssets[curr] = (newTotalAssets[curr] || 0) - qty;
+            } else if ((type === 'transfer' || type === 'exchange') && tx.payload.toAccountId) {
+                // Was Source -qty, Target +targetQty
+                // So Source +qty, Target -targetQty
+                newAccounts[acc][curr] = (newAccounts[acc][curr] || 0) + qty;
+                newTotalAssets[curr] = (newTotalAssets[curr] || 0) + qty;
 
-        const newAccounts = { ...lastAccounts };
+                const tAcc = tx.payload.toAccountId!;
+                const tCurr = tx.payload.targetCurrency || curr;
+                const tQty = tx.payload.targetAmount || qty;
 
-        if (oldAccountId === newAccountId) {
-            // Same account, just diff
-            newAccounts[newAccountId] = (newAccounts[newAccountId] || 0) + diff;
-        } else {
-            // Revert old
-            newAccounts[oldAccountId] = (newAccounts[oldAccountId] || 0) - oldAmountSigned;
-            // Apply new
-            newAccounts[newAccountId] = (newAccounts[newAccountId] || 0) + newAmountSigned;
-        }
+                newAccounts[tAcc][tCurr] = (newAccounts[tAcc][tCurr] || 0) - tQty;
+                newTotalAssets[tCurr] = (newTotalAssets[tCurr] || 0) - tQty;
+            }
+        };
+
+        const apply = (payload: Transaction['payload'], type: Transaction['type']) => {
+            const qty = payload.amount;
+            const curr = payload.currency;
+            const acc = payload.accountId;
+
+            if (!newAccounts[acc]) newAccounts[acc] = {};
+            if (!newTotalAssets[curr]) newTotalAssets[curr] = 0;
+
+            if (type === 'expense') {
+                newAccounts[acc][curr] = (newAccounts[acc][curr] || 0) - qty;
+                newTotalAssets[curr] = (newTotalAssets[curr] || 0) - qty;
+            } else if (type === 'income') {
+                newAccounts[acc][curr] = (newAccounts[acc][curr] || 0) + qty;
+                newTotalAssets[curr] = (newTotalAssets[curr] || 0) + qty;
+            } else if ((type === 'transfer' || type === 'exchange') && payload.toAccountId) {
+                newAccounts[acc][curr] = (newAccounts[acc][curr] || 0) - qty;
+                newTotalAssets[curr] = (newTotalAssets[curr] || 0) - qty;
+
+                const tAcc = payload.toAccountId!;
+                const tCurr = payload.targetCurrency || curr;
+                const tQty = payload.targetAmount || qty;
+
+                if (!newAccounts[tAcc]) newAccounts[tAcc] = {};
+                if (!newTotalAssets[tCurr]) newTotalAssets[tCurr] = 0;
+
+                newAccounts[tAcc][tCurr] = (newAccounts[tAcc][tCurr] || 0) + tQty;
+                newTotalAssets[tCurr] = (newTotalAssets[tCurr] || 0) + tQty;
+            }
+        };
+
+        // Execute Revert then Apply
+        revert(originalTx);
+        apply(newPayload, originalTx.type); // Type usually doesn't change, if it does, it's complex. Assuming type same for now.
 
         // Create Adjustment Block
         const adjustmentBlock: Transaction = {
@@ -407,15 +560,13 @@ class SimpleDriveService {
             }
         };
 
-        // Save
+        // Save logic
         if (this.isGuestMode) {
-            console.log("[Guest] Edited (Adjustment):", adjustmentBlock);
             this.latestBlock = adjustmentBlock;
             this.mockChainCache.set(adjustmentBlock.id, adjustmentBlock);
             return adjustmentBlock;
         }
 
-        // Real Drive Upload
         await this.uploadBlockToDrive(adjustmentBlock);
         this.latestBlock = adjustmentBlock;
         return adjustmentBlock;
@@ -427,7 +578,13 @@ class SimpleDriveService {
         amount: number,
         category: string,
         note: string,
-        accountId: string = 'acc_cash' // Default
+        accountId: string = 'acc_cash', // Default
+        options?: {
+            toAccountId?: string;
+            exchangeRate?: number;
+            targetAmount?: number;
+            date?: number;
+        }
     ): Promise<Transaction> {
 
         // 1. 準備上一筆資料 (Snapshot & ID)
@@ -436,24 +593,49 @@ class SimpleDriveService {
         const currentAssets = prevSnapshot.totalAssets;
         const currentAccounts = prevSnapshot.accounts || {};
 
-        const changeAmount = (type === 'expense' ? -Math.abs(amount) : Math.abs(amount));
-        const newAssets = currentAssets + changeAmount;
+        // Asset logic
+        let changeAmount = 0;
+        if (type === 'expense') changeAmount = -Math.abs(amount);
+        else if (type === 'income') changeAmount = Math.abs(amount);
+        // Transfer: No change to total assets (in base currency), unless exchange rate involved...
+        // For simplicity, if same currency, 0 change to Total. If different, we might track Total in Base Currency.
+        // Let's assume Total Assets is strictly Sum of (Balance * Rate). 
+        // For now, keep simple: Transfer doesn't change Total Assets if we ignore rate fluctuation during transfer.
 
-        // Update Account Balance
         const newAccounts = { ...currentAccounts };
-        newAccounts[accountId] = (newAccounts[accountId] || 0) + changeAmount;
+
+        if (type === 'transfer' && options?.toAccountId) {
+            // Deduct from Source
+            newAccounts[accountId] = (newAccounts[accountId] || 0) - Math.abs(amount);
+            // Add to Target
+            const targetAmt = options.targetAmount !== undefined ? options.targetAmount : Math.abs(amount);
+            newAccounts[options.toAccountId] = (newAccounts[options.toAccountId] || 0) + targetAmt;
+        } else {
+            // Normal Expense/Income
+            // Update Account Balance
+            newAccounts[accountId] = (newAccounts[accountId] || 0) + changeAmount;
+        }
+
+        // Re-calculate Total Assets based on new balances? 
+        // Or just apply delta?
+        // If we want Total Net Worth, we should ideally sum up all accounts.
+        // But we don't have rates for all accounts here. 
+        // So we fallback to: Total Assets = Previous + Change.
+        // For transfer, Change is 0 (money moved, not lost/gained).
+        const newAssets = currentAssets + changeAmount;
 
         // 2. 建立新區塊
         const newBlock: Transaction = {
             id: crypto.randomUUID(),
-            timestamp: Date.now(),
+            timestamp: options?.date || Date.now(),
             type,
             prev_id: prevBlock ? prevBlock.id : null,
             payload: {
                 amount,
                 category,
                 note,
-                accountId
+                accountId,
+                ...options
             },
             snapshot: {
                 totalAssets: newAssets,
@@ -625,12 +807,12 @@ class SimpleDriveService {
 
 
     // 獲取當前快照
-    getCurrentSnapshot(): { totalAssets: number, accounts: Record<string, number> } {
-        return this.latestBlock?.snapshot || { totalAssets: 0, accounts: {} };
+    getCurrentSnapshot(): { totalAssets: Record<string, number>, accounts: Record<string, Record<string, number>> } {
+        return this.latestBlock?.snapshot || { totalAssets: {}, accounts: {} };
     }
 
     // 獲取帳戶餘額
-    getAccountBalances(): Record<string, number> {
+    getAccountBalances(): Record<string, Record<string, number>> {
         return this.latestBlock?.snapshot.accounts || {};
     }
 

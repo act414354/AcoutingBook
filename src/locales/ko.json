@@ -9,6 +9,16 @@
         "try_demo": "데모 모드 체험",
         "demo_mode_desc": "(계정 필요 없음)"
     },
+    "common": {
+        "logout": "로그아웃",
+        "loading": "로딩 중...",
+        "error_load": "로드 실패"
+    },
+    "common": {
+        "logout": "로그아웃",
+        "loading": "로딩 중...",
+        "error_load": "로드 실패"
+    },
     "dashboard": {
         "title": "대시보드",
         "total_net_worth": "총 순자산",
@@ -18,9 +28,22 @@
         "total_in_flight": "총 대기 금액",
         "no_pending": "대기 중인 결제 없음",
         "home": "홈",
-        "invest": "투자",
         "budget": "예산",
-        "settings": "설정"
+        "budget": "예산",
+        "settings": "설정",
+        "account_balances": "계좌 잔액",
+        "recent_activity": "최근 활동",
+        "splitwise": "정산",
+        "invest": "투자",
+        "record": "기록",
+        "family": "가족",
+        "fund": "펀드",
+        "futures": "선물",
+        "tw_stock": "대만 주식",
+        "us_stock": "미국 주식",
+        "crypto": "암호화폐",
+        "metal": "귀금속",
+        "real_estate": "부동산"
     },
     "invest": {
         "tab_short": "단기 투자 (T+2)",
@@ -38,11 +61,88 @@
     "budget": {
         "title": "흐름도 예산",
         "desc": "생키 다이어그램이 곧 출시됩니다. 현금 흐름을 시각적으로 관리하세요.",
-        "canvas_placeholder": "[ 생키 다이어그램 캔버스 ]"
+        "canvas_placeholder": "[ 생키 다이어그램 캔버스 ]",
+        "flow_mode": "흐름 모드"
     },
     "settings": {
         "title": "설정",
         "language": "언어",
-        "coming_soon": "설정 기능 준비 중"
+        "coming_soon": "설정 기능 준비 중",
+        "modules": "모듈 (베타)",
+        "budget_desc": "생키 현금 흐름",
+        "splitwise_desc": "그룹 정산",
+        "invest_desc": "주식 & 암호화폐",
+        "family_desc": "가족 지출",
+        "fund_desc": "뮤추얼 펀드",
+        "futures_desc": "선물 거래",
+        "tw_stock_desc": "대만 주식시장",
+        "us_stock_desc": "미국 시장",
+        "crypto_desc": "BTC/ETH/알트코인",
+        "metal_desc": "금/은",
+        "real_estate_desc": "부동산 자산",
+        "home_widgets": "홈 위젯",
+        "widget_asset_card": "총 자산 카드",
+        "widget_t_plus_two": "T+2 현황판",
+        "widget_transactions": "최근 거래 목록",
+        "manage_categories": "카테고리 관리",
+        "add_category_placeholder": "새 카테고리...",
+        "confirm_delete_category": "이 카테고리를 삭제하시겠습니까?"
+    },
+    "splitwise": {
+        "title": "정산",
+        "subtitle": "공동 지출 관리",
+        "new_group": "+ 새 그룹",
+        "no_groups": "그룹 없음",
+        "desc": "Google Drive를 통해 친구들과 비용을 분담할 그룹을 만드세요.",
+        "you_owe": "줄 돈",
+        "you_are_owed": "받을 돈"
+    },
+    "transaction": {
+        "new": "새 거래",
+        "expense": "지출",
+        "income": "수입",
+        "amount_label": "금액",
+        "amount_placeholder": "0.00",
+        "category_label": "카테고리",
+        "category_placeholder": "카테고리 선택",
+        "account_label": "계좌",
+        "account_placeholder": "계좌 선택",
+        "note_label": "메모 (선택)",
+        "note_placeholder": "설명 입력...",
+        "save_btn": "거래 저장",
+        "saving": "저장 중...",
+        "categories": {
+            "food": "식비",
+            "transport": "교통",
+            "housing": "주거",
+            "entertainment": "문화/여가",
+            "education": "교육",
+            "health": "의료/건강",
+            "other": "기타",
+            "salary": "급여",
+            "bonus": "보너스",
+            "investment": "투자"
+        },
+        "accounts": {
+            "cash": "현금",
+            "bank": "은행",
+            "credit": "신용카드",
+            "ewallet": "전자 지갑",
+            "securities": "증권",
+            "exchange": "거래소"
+        },
+        "transfer": "이체",
+        "to_account_label": "입금 계좌",
+        "exchange_rate_label": "환율",
+        "target_amount_label": "변환 금액",
+        "no_transactions": "아직 거래가 없습니다."
+    },
+    "account_settings": {
+        "title": "계좌 설정",
+        "add_account": "계좌 추가",
+        "account_name": "계좌 이름",
+        "account_type": "계좌 유형",
+        "initial_balance": "초기 잔액",
+        "edit_account": "계좌 편집"
     }
 }

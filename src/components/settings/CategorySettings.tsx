@@ -60,8 +60,8 @@ export const CategorySettings: React.FC = () => {
         await simpleDriveService.saveSettings(updatedSettings);
     };
 
-    if (loading) return <div className="text-center text-gray-500 py-8">Loading...</div>;
-    if (!settings) return <div className="text-center text-red-500">Failed to load settings</div>;
+    if (loading) return <div className="text-center text-gray-500 py-8">{t('common.loading')}</div>;
+    if (!settings) return <div className="text-center text-red-500">{t('common.error_load')}</div>;
 
     return (
         <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">

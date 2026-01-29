@@ -20,7 +20,9 @@
         "home": "Início",
         "invest": "Investir",
         "budget": "Orçamento",
-        "settings": "Ajustes"
+        "settings": "Ajustes",
+        "accounts": "Contas",
+        "account_balances": "Saldos das contas"
     },
     "invest": {
         "tab_short": "Curto Prazo (T+2)",
@@ -43,6 +45,23 @@
     "settings": {
         "title": "Configurações",
         "language": "Idioma",
-        "coming_soon": "Configurações em breve"
+        "coming_soon": "Configurações em breve",
+        "confirm_delete_category": "Tem certeza que deseja excluir esta categoria?",
+        "currency_settings": "Configurações de Moeda",
+        "confirm_delete_currency": "Excluir moeda?"
+    },
+    "account_settings": {
+        "auto_topup": "Recarga Automática",
+        "topup_threshold": "Limite Inferior",
+        "topup_amount": "Valor da Recarga"
+    },
+    "modules": {
+        "exchange_rate": "Taxa de Câmbio & Multi-moeda"
+    },
+    "transaction": {
+        "exchange": "Câmbio",
+        "accounts": {
+            "exchange": "Câmbio"
+        }
     }
 }

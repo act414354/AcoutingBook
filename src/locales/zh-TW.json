@@ -9,18 +9,30 @@
         "try_demo": "試用體驗模式",
         "demo_mode_desc": "(無需帳號)"
     },
+    "common": {
+        "logout": "登出",
+        "loading": "載入中...",
+        "error_load": "載入失敗",
+        "save": "儲存",
+        "cancel": "取消",
+        "none": "無"
+    },
     "dashboard": {
         "title": "儀表板",
         "total_net_worth": "總資產淨值",
         "welcome": "歡迎",
-        "t_plus_two": "T+2 在途資金",
+        "t_plus_two": "交割金額",
         "settlement_status": "交割狀態",
         "total_in_flight": "總在途金額",
         "no_pending": "無待交割項目",
         "home": "首頁",
         "budget": "預算",
+        "budget": "預算",
         "settings": "設定",
-        "splitwise": "分帳",
+        "accounts": "帳戶",
+        "account_balances": "帳戶餘額",
+        "recent_activity": "近期交易",
+        "splitwise": "團購",
         "invest": "投資",
         "record": "記帳",
         "family": "家庭",
@@ -48,7 +60,8 @@
     "budget": {
         "title": "流向圖預算",
         "desc": "視覺化桑基圖即將推出。拖拉水管來管理現金流。",
-        "canvas_placeholder": "[ 桑基圖畫布 ]"
+        "canvas_placeholder": "[ 桑基圖畫布 ]",
+        "flow_mode": "流向模式"
     },
     "settings": {
         "title": "設定",
@@ -69,10 +82,15 @@
         "home_widgets": "首頁區塊",
         "widget_asset_card": "總資產卡片",
         "widget_t_plus_two": "T+2 交割看板",
-        "widget_transactions": "近期交易列表"
+        "widget_transactions": "近期交易列表",
+        "manage_categories": "管理分類",
+        "add_category_placeholder": "新增分類...",
+        "confirm_delete_category": "確定要刪除此分類嗎？",
+        "currency_settings": "幣別設定",
+        "confirm_delete_currency": "確定要刪除此幣別嗎？"
     },
     "splitwise": {
-        "title": "群組分帳",
+        "title": "團購分帳",
         "subtitle": "管理共同開支",
         "new_group": "+ 新增群組",
         "no_groups": "尚無群組",
@@ -109,15 +127,46 @@
         "accounts": {
             "cash": "現金",
             "bank": "銀行",
-            "credit": "信用卡"
-        }
+            "credit": "信用卡",
+            "ewallet": "電子錢包",
+            "securities": "證券帳戶",
+            "exchange": "交易所"
+        },
+        "transfer": "轉帳",
+        "to_account_label": "轉入帳戶",
+        "exchange_rate_label": "匯率",
+        "target_amount_label": "折合金額",
+        "no_transactions": "尚未有交易記錄。"
     },
     "account_settings": {
         "title": "帳戶設定",
         "add_account": "新增帳戶",
         "account_name": "帳戶名稱",
         "account_type": "帳戶類型",
-        "initial_balance": "初始餘額",
-        "edit_account": "編輯帳戶"
+        "initial_balance": "初始資金",
+        "edit_account": "編輯帳戶",
+        "view_mode": "檢視模式",
+        "delete_account": "刪除",
+        "confirm_delete": "確定要刪除此帳戶嗎？",
+        "linked_account": "綁定帳戶",
+        "credit_settings": "信用卡設定",
+        "statement_day": "結帳日",
+        "payment_day": "繳款日",
+        "auto_payment_account": "自動扣款帳戶",
+        "fee_settings": "手續費設定",
+        "fee_discount": "手續費折扣",
+        "fee_discount_desc": "1折 = 原價10%，0.5折 = 原價5%",
+        "fee_examples": "費用計算範例",
+        "buy_example": "買入",
+        "sell_example": "賣出",
+        "min_fee": "最低手續費",
+        "min_fee_desc": "台灣預設 20 元",
+        "confirm_delete_currency": "確定要刪除此幣別嗎？"
+    },
+    "ewallet_settings": {
+        "title": "電子錢包設定",
+        "auto_topup": "自動儲值",
+        "topup_threshold": "餘額低於",
+        "topup_amount": "儲值金額"
     }
 }
