@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { simpleDriveService } from '../../services/simpleDrive';
 import { blockchainTransactionService } from '../../services/blockchainTransactionService';
-import { checkDriveFiles } from '../../services/driveFileChecker';
 import type { Transaction } from '../../services/simpleDrive';
 
 interface TransactionFormProps {
@@ -165,21 +164,39 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, o
 
     useEffect(() => {
         const loadData = async () => {
-            const settings = await simpleDriveService.getSettings();
+            try {
+                console.log('🔄 正在載入設定資料...');
+                const settings = await simpleDriveService.getSettings();
+                console.log('✅ 設定資料載入成功:', settings);
 
-            // Categories
-            const currentType = (type === 'transfer' || type === 'exchange') ? 'expense' : type;
-            const categories = settings.categories[currentType] || [];
-            setAvailableCategories(categories.map(cat => cat.name));
-            if (!category && categories.length > 0) {
-                setCategory(categories[0].name);
-            }
+                // Categories
+                const currentType = (type === 'transfer' || type === 'exchange') ? 'expense' : type;
+                const categories = settings.categories[currentType] || [];
+                setAvailableCategories(categories.map(cat => cat.name));
+                if (!category && categories.length > 0) {
+                    setCategory(categories[0].name);
+                }
 
-            // Accounts
-            if (settings.accounts) {
-                setAvailableAccounts(settings.accounts);
-                if (!accountId && settings.accounts.length > 0) {
-                    setAccountId(settings.accounts[0].id);
+                // Accounts
+                if (settings.accounts) {
+                    console.log('📋 可用帳戶:', settings.accounts);
+                    setAvailableAccounts(settings.accounts);
+                    if (!accountId && settings.accounts.length > 0) {
+                        setAccountId(settings.accounts[0].id);
+                    }
+                } else {
+                    console.warn('⚠️ 沒有找到帳戶資料');
+                }
+            } catch (error) {
+                console.error('❌ 載入設定資料失敗:', error);
+                // 設置預設帳戶以防載入失敗
+                const defaultAccounts = [
+                    { id: '001_cash_cash', name: 'cash', type: 'cash' },
+                    { id: '002_bank_bank', name: 'bank', type: 'bank' }
+                ];
+                setAvailableAccounts(defaultAccounts);
+                if (!accountId) {
+                    setAccountId(defaultAccounts[0].id);
                 }
             }
         };
@@ -188,10 +205,18 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, o
 
     // Handle Exchange Rate Calculation
     useEffect(() => {
-        if (!amount || !exchangeRate) return;
-        const result = (parseFloat(amount) * parseFloat(exchangeRate));
-        setTargetAmount(result.toFixed(2));
-    }, [amount, exchangeRate]);
+        if (!amount) return;
+        
+        if (type === 'transfer') {
+            // 轉帳交易：目標金額等於原始金額，匯率設為 1
+            setExchangeRate('1');
+            setTargetAmount(amount);
+        } else if (type === 'exchange' && exchangeRate) {
+            // 兌換交易：根據匯率計算目標金額
+            const result = (parseFloat(amount) * parseFloat(exchangeRate));
+            setTargetAmount(result.toFixed(2));
+        }
+    }, [amount, exchangeRate, type]);
 
     const handleSubmit = async () => {
         // 改進的驗證邏輯
@@ -219,6 +244,13 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, o
 
         if ((type === 'transfer' || type === 'exchange') && !toAccountId) {
             setErrorMessage(t('transaction.no_target_account'));
+            setShowError(true);
+            setTimeout(() => setShowError(false), 3000);
+            return;
+        }
+
+        if ((type === 'transfer' || type === 'exchange') && !targetAmount) {
+            setErrorMessage('請輸入目標金額');
             setShowError(true);
             setTimeout(() => setShowError(false), 3000);
             return;
@@ -309,19 +341,34 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, o
     return (
         <div className="w-full text-white">
             {/* Type Switcher */}
-            <div className="grid grid-cols-4 gap-1 bg-gray-800 p-1 rounded-xl mb-4">
-                {(['expense', 'income', 'transfer', 'exchange'] as const).map(tKey => (
-                    <button
-                        key={tKey}
-                        onClick={() => setType(tKey)}
-                        className={`py-2 text-xs font-bold rounded-lg transition-all capitalize ${type === tKey
-                            ? 'bg-blue-600 text-white'
-                            : 'text-gray-400 hover:text-gray-200'
-                            }`}
-                    >
-                        {t(`transaction.${tKey}`, tKey)}
-                    </button>
-                ))}
+            <div className="grid grid-cols-3 gap-2 bg-gray-800 p-2 rounded-xl mb-4">
+                {(['expense', 'income', 'transfer'] as const).map(tKey => {
+                    const getActiveStyles = () => {
+                        switch (tKey) {
+                            case 'expense':
+                                return 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg shadow-red-500/30';
+                            case 'income':
+                                return 'bg-gradient-to-r from-green-600 to-green-500 text-white shadow-lg shadow-green-500/30';
+                            case 'transfer':
+                                return 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30';
+                            default:
+                                return 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30';
+                        }
+                    };
+
+                    return (
+                        <button
+                            key={tKey}
+                            onClick={() => setType(tKey)}
+                            className={`py-3 px-4 text-sm font-bold rounded-lg transition-all capitalize ${type === tKey
+                                ? getActiveStyles()
+                                : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+                                }`}
+                        >
+                            {t(`transaction.${tKey}`, tKey)}
+                        </button>
+                    );
+                })}
             </div>
 
             {/* Smart Input */}
@@ -345,148 +392,143 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, o
                 />
             </div>
 
-            {/* Main Input Row */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
-                {/* Transaction Date */}
-                <div>
-                    <label className="block text-xs font-medium text-gray-400 mb-1">📅 日期</label>
-                    <input
-                        type="date"
-                        value={transactionDate}
-                        onChange={e => setTransactionDate(e.target.value)}
-                        className="w-full bg-gray-800 border border-gray-700 focus:border-blue-500 rounded-lg py-2 px-2 outline-none text-white text-sm"
-                    />
-                </div>
-
-                {/* Currency */}
-                <div>
-                    <label className="block text-xs font-medium text-gray-400 mb-1">💱 幣別</label>
-                    <select
-                        value={currency}
-                        onChange={e => {
-                            setCurrency(e.target.value);
-                            if (type !== 'exchange') setTargetCurrency(e.target.value);
-                        }}
-                        className="w-full bg-gray-800 border border-gray-700 focus:border-blue-500 rounded-lg py-2 px-2 outline-none text-white text-sm"
-                    >
-                        {MAX_CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                </div>
-
-                {/* Amount */}
-                <div className="col-span-2 md:col-span-1">
-                    <label className="block text-xs font-medium text-gray-400 mb-1">💵 金額</label>
-                    <input
-                        type="number"
-                        value={amount}
-                        onChange={e => setAmount(e.target.value)}
-                        className="w-full bg-gray-800 border border-gray-700 focus:border-blue-500 rounded-lg py-2 px-3 outline-none text-white text-lg font-bold placeholder-gray-500"
-                        placeholder="0.00"
-                        style={{
-                            MozAppearance: 'textfield',
-                            appearance: 'textfield',
-                            WebkitAppearance: 'textfield'
-                        } as React.CSSProperties}
-                    />
-                </div>
+            {/* Transaction Date */}
+            <div className="mb-4">
+                <label className="block text-xs font-medium text-gray-400 mb-1">📅 日期</label>
+                <input
+                    type="date"
+                    value={transactionDate}
+                    onChange={e => setTransactionDate(e.target.value)}
+                    className="w-full bg-gray-800 border border-gray-700 focus:border-blue-500 rounded-lg py-2 px-3 outline-none text-white text-sm"
+                />
             </div>
 
-            {/* Account & Category Row */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
-                {/* Source Account */}
-                <div>
-                    <label className="block text-xs font-medium text-gray-400 mb-1">🏦 帳戶</label>
-                    <select
-                        value={accountId}
-                        onChange={e => setAccountId(e.target.value)}
-                        className="w-full bg-gray-800 border border-gray-700 focus:border-blue-500 rounded-lg py-2 px-3 outline-none text-white text-sm"
-                    >
-                        {availableAccounts.map(acc => (
-                            <option key={acc.id} value={acc.id}>{acc.name}</option>
-                        ))}
-                    </select>
-                </div>
-
-                {/* Category */}
-                {type !== 'transfer' && type !== 'exchange' && (
-                    <div>
-                        <label className="block text-xs font-medium text-gray-400 mb-1">📂 分類</label>
+            {/* Visual Transaction Flow */}
+            <div className="bg-gray-800/50 rounded-xl p-4 mb-4 border border-gray-700">
+                {/* From Account */}
+                <div className="mb-4">
+                    <label className="block text-xs font-medium text-gray-400 mb-2">
+                        {type === 'expense' ? '💳 支出帳戶' : type === 'income' ? '💰 收入帳戶' : '📤 轉出帳戶'}
+                    </label>
+                    <div className="flex gap-3">
                         <select
-                            value={category}
-                            onChange={e => setCategory(e.target.value)}
-                            className="w-full bg-gray-800 border border-gray-700 focus:border-blue-500 rounded-lg py-2 px-3 outline-none text-white text-sm"
+                            value={accountId}
+                            onChange={e => {
+                                console.log('🏦 選擇轉出帳戶:', e.target.value);
+                                setAccountId(e.target.value);
+                            }}
+                            className="flex-1 bg-gray-700 border border-gray-600 focus:border-blue-500 rounded-lg py-2 px-3 outline-none text-white text-sm"
                         >
-                            <option value="">選擇分類</option>
-                            {availableCategories.map(cat => (
-                                <option key={cat} value={cat}>{cat}</option>
+                            {availableAccounts.map(acc => (
+                                <option key={acc.id} value={acc.id}>{acc.name}</option>
                             ))}
                         </select>
+                        <input
+                            type="number"
+                            value={amount}
+                            onChange={e => setAmount(e.target.value)}
+                            className="w-32 bg-gray-700 border border-gray-600 focus:border-blue-500 rounded-lg py-2 px-3 outline-none text-white text-sm font-bold placeholder-gray-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-outer-spin-button]:m-0"
+                            placeholder="0.00"
+                        />
+                    </div>
+                </div>
+
+                {/* Arrow */}
+                {(type === 'transfer' || type === 'exchange') && (
+                    <div className="flex justify-center mb-4">
+                        <div className="flex flex-col items-center gap-2">
+                            {/* 箭頭主體 */}
+                            <div className="relative">
+                                {/* 發光效果 */}
+                                <div className="absolute inset-0 w-8 h-8 bg-blue-500/20 rounded-full blur-md animate-pulse"></div>
+                                
+                                {/* 箭頭圓形背景 */}
+                                <div className="relative w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/30">
+                                    <svg 
+                                        className="w-5 h-5 text-white animate-bounce" 
+                                        fill="none" 
+                                        viewBox="0 0 24 24" 
+                                        stroke="currentColor"
+                                        style={{ animationDuration: '2s' }}
+                                    >
+                                        <path 
+                                            strokeLinecap="round" 
+                                            strokeLinejoin="round" 
+                                            strokeWidth={2.5} 
+                                            d="M19 14l-7 7m0 0l-7-7m7 7V3" 
+                                        />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 )}
-            </div>
 
-            {/* Transfer/Exchange Fields */}
-            {(type === 'transfer' || type === 'exchange') && (
-                <div className="bg-gray-800/50 p-3 rounded-lg mb-4 border border-gray-700">
-                    <div className="grid grid-cols-2 gap-3 mb-3">
-                        <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-1">🔄 目標帳戶</label>
+                {/* To Account */}
+                {(type === 'transfer' || type === 'exchange') && (
+                    <div className="mb-4">
+                        <label className="block text-xs font-medium text-gray-400 mb-2">
+                            📥 轉入帳戶
+                        </label>
+                        <div className="flex gap-3">
                             <select
                                 value={toAccountId}
-                                onChange={e => setToAccountId(e.target.value)}
-                                className="w-full bg-gray-800 border border-gray-700 focus:border-blue-500 rounded-lg py-2 px-3 outline-none text-white text-sm"
+                                onChange={e => {
+                                    console.log('🏦 選擇轉入帳戶:', e.target.value);
+                                    setToAccountId(e.target.value);
+                                }}
+                                className="flex-1 bg-gray-700 border border-gray-600 focus:border-blue-500 rounded-lg py-2 px-3 outline-none text-white text-sm"
                             >
                                 <option value="">選擇帳戶</option>
                                 {availableAccounts.filter(a => a.id !== accountId).map(acc => (
                                     <option key={acc.id} value={acc.id}>{acc.name}</option>
                                 ))}
                             </select>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-1">💱 目標幣別</label>
-                            <select
-                                value={targetCurrency}
-                                onChange={e => setTargetCurrency(e.target.value)}
-                                className="w-full bg-gray-800 border border-gray-700 focus:border-blue-500 rounded-lg py-2 px-3 outline-none text-white text-sm"
-                            >
-                                {MAX_CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
-                            </select>
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-1">📊 匯率</label>
-                            <input
-                                type="number"
-                                value={exchangeRate}
-                                onChange={e => setExchangeRate(e.target.value)}
-                                className="w-full bg-gray-800 border border-gray-700 focus:border-blue-500 rounded-lg py-2 px-3 outline-none text-white text-sm"
-                                step="0.01"
-                                min="0"
-                                style={{
-                                    MozAppearance: 'textfield',
-                                    appearance: 'textfield',
-                                    WebkitAppearance: 'textfield'
-                                } as React.CSSProperties}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-1">💰 目標金額</label>
                             <input
                                 type="number"
                                 value={targetAmount}
                                 onChange={e => setTargetAmount(e.target.value)}
-                                className="w-full bg-gray-800 border border-gray-700 focus:border-blue-500 rounded-lg py-2 px-3 outline-none text-white text-sm"
-                                step="0.01"
-                                min="0"
-                                style={{
-                                    MozAppearance: 'textfield',
-                                    appearance: 'textfield',
-                                    WebkitAppearance: 'textfield'
-                                } as React.CSSProperties}
+                                className="w-32 bg-gray-700 border border-gray-600 focus:border-blue-500 rounded-lg py-2 px-3 outline-none text-white text-sm font-bold placeholder-gray-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-outer-spin-button]:m-0"
+                                placeholder="0.00"
+                                readOnly={type === 'exchange'}
                             />
                         </div>
                     </div>
+                )}
+
+                {/* Exchange Rate for Exchange */}
+                {type === 'exchange' && (
+                    <div className="flex justify-center mt-2">
+                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                            <label>匯率:</label>
+                            <input
+                                type="number"
+                                value={exchangeRate}
+                                onChange={e => setExchangeRate(e.target.value)}
+                                className="w-20 bg-gray-700 border border-gray-600 focus:border-blue-500 rounded-lg py-1 px-2 outline-none text-white text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-outer-spin-button]:m-0"
+                                step="0.01"
+                                min="0"
+                            />
+                            <span>1 {currency} = {exchangeRate} {targetCurrency}</span>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Category */}
+            {(type === 'expense' || type === 'income') && (
+                <div className="mb-4">
+                    <label className="block text-xs font-medium text-gray-400 mb-1">� 分類</label>
+                    <select
+                        value={category}
+                        onChange={e => setCategory(e.target.value)}
+                        className="w-full bg-gray-800 border border-gray-700 focus:border-blue-500 rounded-lg py-2 px-3 outline-none text-white text-sm"
+                    >
+                        <option value="">選擇分類</option>
+                        {availableCategories.map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                    </select>
                 </div>
             )}
 
@@ -509,21 +551,6 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, o
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-bold py-3 rounded-lg transition-colors"
             >
                 {isSubmitting ? '提交中...' : '提交交易'}
-            </button>
-
-            {/* Debug Button - 檢查 Google Drive 檔案 */}
-            <button
-                onClick={async () => {
-                    console.log('🔍 開始檢查 Google Drive 檔案...');
-                    try {
-                        await checkDriveFiles();
-                    } catch (error) {
-                        console.error('檢查失敗:', error);
-                    }
-                }}
-                className="w-full bg-gray-700 hover:bg-gray-600 text-white font-medium py-2 rounded-lg transition-colors text-sm mt-2"
-            >
-                🔍 檢查 Google Drive 檔案
             </button>
         </div>
     );

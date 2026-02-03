@@ -95,7 +95,14 @@
         "add_category_placeholder": "新增分類...",
         "confirm_delete_category": "確定要刪除此分類嗎？",
         "currency_settings": "幣別設定",
-        "confirm_delete_currency": "確定要刪除此幣別嗎？"
+        "confirm_delete_currency": "確定要刪除此幣別嗎？",
+        "add_category": "新增分類",
+        "category_placeholder": "輸入分類名稱",
+        "category_list": "分類列表",
+        "no_categories": "尚無分類",
+        "add_first_category": "在上方新增您的第一個分類",
+        "confirm_delete_category": "確定要刪除此分類嗎？",
+        "load_failed": "載入設定失敗"
     },
     "splitwise": {
         "title": "團購分帳",

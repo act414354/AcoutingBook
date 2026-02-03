@@ -179,10 +179,18 @@ export const TransactionList: React.FC<TransactionListProps> = ({ onEdit, lastRe
                             }}
                         >
                             <div className="flex items-center gap-3 min-w-0">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${tx.type === 'income' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                    tx.type === 'income' ? 'bg-green-500/20 text-green-400' : 
+                                    tx.type === 'transfer' ? 'bg-blue-500/20 text-blue-400' : 
+                                    'bg-red-500/20 text-red-400'
+                                }`}>
                                     {tx.type === 'income' ? (
                                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
+                                        </svg>
+                                    ) : tx.type === 'transfer' ? (
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                         </svg>
                                     ) : (
                                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -193,21 +201,39 @@ export const TransactionList: React.FC<TransactionListProps> = ({ onEdit, lastRe
 
                                 <div className="min-w-0">
                                     <div className="text-white font-semibold text-sm truncate">
-                                        {tx.payload.category}{noteLabel ? ` • ${noteLabel}` : ''}
+                                        {tx.type === 'transfer' 
+                                            ? `${accountsById[tx.payload.accountId]?.name || tx.payload.accountId} → ${accountsById[tx.payload.toAccountId]?.name || tx.payload.toAccountId}${noteLabel ? ` • ${noteLabel}` : ''}`
+                                            : `${tx.payload.category}${noteLabel ? ` • ${noteLabel}` : ''}`
+                                        }
                                     </div>
                                     <div className="text-gray-400 text-xs truncate">
-                                        {accountLabel}
+                                        {tx.type === 'transfer' ? '轉帳' : accountLabel}
                                     </div>
                                 </div>
                             </div>
 
                             <div className="flex flex-col items-end gap-0.5">
-                                <div className={`font-bold text-sm ${tx.type === 'income' ? 'text-green-400' : 'text-white'}`}>
-                                    {tx.type === 'income' ? '+' : '-'}${Math.abs(tx.payload.amount).toLocaleString()}
+                                <div className={`font-bold text-sm ${
+                                    tx.type === 'income' ? 'text-green-400' : 
+                                    tx.type === 'transfer' ? 'text-blue-400' : 
+                                    'text-white'
+                                }`}>
+                                    {tx.type === 'transfer' 
+                                        ? `$${(tx.payload.targetAmount || tx.payload.amount).toLocaleString()}`
+                                        : `${tx.type === 'income' ? '+' : '-'}$${Math.abs(tx.payload.amount).toLocaleString()}`
+                                    }
                                 </div>
-                                <div className="text-[11px] text-gray-500">
-                                    {Number.isFinite(currentBalance) ? `${fromAcc?.name || tx.payload.accountId}:${currentBalance.toLocaleString()}` : ''}
-                                </div>
+                                {tx.type === 'transfer' ? (
+                                    <div className="text-[11px] text-gray-500">
+                                        {`${accountsById[tx.payload.accountId]?.name || tx.payload.accountId}:${tx.snapshot?.accounts?.[tx.payload.accountId]?.[tx.payload.currency || 'TWD']?.toLocaleString() || '0'}`}
+                                        <br />
+                                        {`${accountsById[tx.payload.toAccountId]?.name || tx.payload.toAccountId}:${tx.snapshot?.accounts?.[tx.payload.toAccountId]?.[tx.payload.currency || 'TWD']?.toLocaleString() || '0'}`}
+                                    </div>
+                                ) : (
+                                    <div className="text-[11px] text-gray-500">
+                                        {Number.isFinite(currentBalance) ? `${fromAcc?.name || tx.payload.accountId}:${currentBalance.toLocaleString()}` : ''}
+                                    </div>
+                                )}
                                 {editMode && (
                                     <button
                                         onClick={() => onEdit(tx)}
