@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { simpleDriveService } from '../services/simpleDrive';
-import type { UserSettings } from '../services/simpleDrive';
+import type { UserSettings } from '../services/userSettingsService';
 
 interface AccountsScreenProps {
     lastRefresh?: number;
+    onNavigateToSettings?: () => void;
 }
 
-export const AccountsScreen: React.FC<AccountsScreenProps> = ({ lastRefresh }) => {
+export const AccountsScreen: React.FC<AccountsScreenProps> = ({ lastRefresh, onNavigateToSettings }) => {
     const { t, i18n } = useTranslation();
     const [settings, setSettings] = useState<UserSettings | null>(null);
     const [balances, setBalances] = useState<Record<string, Record<string, number>>>({});
@@ -98,21 +99,7 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ lastRefresh }) =
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">{t('account_settings.title', 'Accounts')}</h1>
                 <button
-                    onClick={() => {
-                        // Navigate to Settings -> Account Settings
-                        // We trigger a click on the 'Settings' tab in text
-                        // This is a hack, ideally we use Context to switch tab. 
-                        // Assuming text content match.
-                        const navItems = document.querySelectorAll('p'); // BottomNav labels usually in p or span
-                        // Actually BottomNav labels.
-                        // Let's try locating the Settings button in Bottom Nav safely.
-                        // Filter by text content.
-                        const settingsTab = Array.from(document.querySelectorAll('div[role="button"]')).find(el => el.textContent?.includes(t('dashboard.settings')));
-                        if (settingsTab) (settingsTab as HTMLElement).click();
-
-                        // Also try to find a way to open "Account Settings" sub-section if possible.
-                        // In Real app, we'd pass a param. For now, user just navigates to Settings.
-                    }}
+                    onClick={onNavigateToSettings}
                     className="text-blue-400 text-sm font-bold bg-blue-500/10 px-3 py-1.5 rounded-lg"
                 >
                     {t('account_settings.edit_account', 'Edit')}
@@ -164,7 +151,7 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ lastRefresh }) =
                             {/* Properties Info Badge */}
                             {acc.properties?.linkedAccountId && (
                                 <span className="inline-block bg-blue-500/20 text-blue-400 text-[10px] px-2 py-0.5 rounded-full mt-1">
-                                    Linked
+                                    {t('account_settings.linked')}
                                 </span>
                             )}
                         </div>

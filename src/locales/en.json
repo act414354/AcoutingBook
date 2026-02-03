@@ -7,7 +7,8 @@
         "sign_in_desc": "Sign in to access your encrypted ledger",
         "sign_in_google": "Sign In with Google",
         "try_demo": "Try Demo Mode",
-        "demo_mode_desc": "(No Account)"
+        "demo_mode_desc": "(No Account)",
+        "pro_user": "Pro User"
     },
     "common": {
         "logout": "Sign Out",
@@ -15,7 +16,13 @@
         "error_load": "Failed to load",
         "save": "Save",
         "cancel": "Cancel",
-        "none": "None"
+        "none": "None",
+        "success": "Success!",
+        "error": "Error",
+        "add": "Add",
+        "delete": "Delete",
+        "edit": "Edit",
+        "close": "Close"
     },
     "dashboard": {
         "title": "Dashboard",
@@ -26,7 +33,6 @@
         "total_in_flight": "Total In-Flight",
         "no_pending": "No pending settlements",
         "home": "Home",
-        "budget": "Budget",
         "budget": "Budget",
         "settings": "Settings",
         "accounts": "Accounts",
@@ -42,7 +48,8 @@
         "us_stock": "US Stock",
         "crypto": "Crypto",
         "metal": "Metals",
-        "real_estate": "Real Estate"
+        "real_estate": "Real Estate",
+        "estimated_value": "Estimated Value"
     },
     "invest": {
         "tab_short": "Short-term (T+2)",
@@ -105,6 +112,8 @@
         "new": "New Transaction",
         "expense": "Expense",
         "income": "Income",
+        "transfer": "Transfer",
+        "exchange": "Exchange",
         "amount_label": "Amount",
         "amount_placeholder": "0.00",
         "category_label": "Category",
@@ -115,6 +124,22 @@
         "note_placeholder": "Enter description...",
         "save_btn": "Save Transaction",
         "saving": "Saving...",
+        "save_failed": "Transaction save failed",
+        "network_error": "Network error",
+        "permission_error": "Permission error",
+        "storage_error": "Storage error",
+        "invalid_amount": "Invalid amount",
+        "no_category": "Please select a category",
+        "no_account": "Please select an account",
+        "no_target_account": "Please select a target account",
+        "currency_label": "Currency",
+        "target_label": "Target",
+        "to_account_label": "Target Account",
+        "select_account": "Select Account",
+        "target_currency_label": "Target Currency",
+        "exchange_rate_label": "Exchange Rate",
+        "target_amount_label": "Target Amount",
+        "edit": "Edit Transaction",
         "categories": {
             "food": "Food",
             "transport": "Transport",
@@ -135,10 +160,6 @@
             "securities": "Securities",
             "exchange": "Exchange"
         },
-        "transfer": "Transfer",
-        "to_account_label": "To Account",
-        "exchange_rate_label": "Exchange Rate",
-        "target_amount_label": "Target Amount",
         "no_transactions": "No transactions yet."
     },
     "account_settings": {
@@ -151,6 +172,7 @@
         "view_mode": "View Mode",
         "delete_account": "Delete",
         "confirm_delete": "Are you sure you want to delete this account?",
+        "linked": "Linked",
         "linked_account": "Linked Account",
         "credit_settings": "Credit Card Settings",
         "statement_day": "Statement Day",
@@ -162,9 +184,23 @@
         "fee_examples": "Fee Calculation Examples",
         "buy_example": "Buy",
         "sell_example": "Sell",
+        "add_category": "Add Category",
+        "category_placeholder": "Enter category name",
+        "category_list": "Categories",
+        "no_categories": "No categories yet",
+        "add_first_category": "Add your first category above",
+        "confirm_delete_category": "Are you sure you want to delete this category?",
+        "load_failed": "Failed to load settings",
+        "image_too_large": "Image size cannot exceed 2MB",
         "min_fee": "Minimum Fee",
         "min_fee_desc": "Taiwan default 20",
-        "confirm_delete_currency": "Delete currency?"
+        "confirm_delete_currency": "Delete currency?",
+        "auto_topup": "Auto Top-up",
+        "topup_threshold": "Threshold",
+        "topup_amount": "Top-up Amount",
+        "discount_unit": "x",
+        "fee_formula": "Buy {{buy}}% + Sell {{sell}}% + Tax 0.3% = Total {{total}}%",
+        "min_trade_amount": "Min trade amount: {{amount}} (Fee {{fee}}%)"
     },
     "ewallet_settings": {
         "title": "E-Wallet Settings",

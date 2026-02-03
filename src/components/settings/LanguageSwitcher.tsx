@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { languageService } from '../../services/languageService';
 
 export const LanguageSwitcher = () => {
     const { i18n } = useTranslation();
@@ -16,12 +17,20 @@ export const LanguageSwitcher = () => {
         { code: 'pt', label: 'Português' },
     ];
 
+    const handleLanguageChange = async (languageCode: string) => {
+        try {
+            await languageService.changeLanguage(languageCode);
+        } catch (error) {
+            console.error('語言變更失敗:', error);
+        }
+    };
+
     return (
         <div className="grid grid-cols-2 gap-3">
             {languages.map((lang) => (
                 <button
                     key={lang.code}
-                    onClick={() => i18n.changeLanguage(lang.code)}
+                    onClick={() => handleLanguageChange(lang.code)}
                     className={`
             py-3 px-4 rounded-xl text-sm font-medium transition-all
             ${i18n.language === lang.code

@@ -1,27 +1,69 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSimpleAuth } from '../../context/SimpleAuthContext';
 
 export const ModuleSettings: React.FC = () => {
     const { t } = useTranslation();
     const { settings, updateSettings } = useSimpleAuth();
+    const [savingModule, setSavingModule] = useState<string | null>(null);
+    const [errorModule, setErrorModule] = useState<string | null>(null);
 
     if (!settings) return null;
 
-    const toggleModule = (moduleKey: keyof typeof settings.modules) => {
+    const toggleModule = async (moduleKey: keyof typeof settings.modules) => {
+        // 立即顯示切換效果（樂觀更新）
+        const originalState = settings.modules[moduleKey];
         const newModules = {
             ...settings.modules,
-            [moduleKey]: !settings.modules[moduleKey]
+            [moduleKey]: !originalState
         };
-        updateSettings({
+        
+        const newSettings = {
             ...settings,
             modules: newModules
-        });
+        };
+        
+        // 顯示保存狀態
+        setSavingModule(moduleKey);
+        setErrorModule(null);
+        
+        try {
+            // 背景保存
+            await updateSettings(newSettings);
+            // 保存成功，不做任何動作（UI 已經是正確狀態）
+        } catch (error) {
+            console.error('保存模組設定失敗:', error);
+            
+            // 保存失敗，回滾到原來的狀態
+            const rollbackSettings = {
+                ...settings,
+                modules: {
+                    ...settings.modules,
+                    [moduleKey]: originalState
+                }
+            };
+            
+            // 更新 Context 中的設定回滾
+            try {
+                await updateSettings(rollbackSettings);
+            } catch (rollbackError) {
+                console.error('回滾設定也失敗:', rollbackError);
+            }
+            
+            // 顯示錯誤狀態
+            setErrorModule(moduleKey);
+            
+            // 3秒後清除錯誤狀態
+            setTimeout(() => setErrorModule(null), 3000);
+        } finally {
+            // 快速清除保存狀態 - 100ms
+            setTimeout(() => setSavingModule(null), 100);
+        }
     };
 
     const modules = [
         { id: 'budget', label: t('dashboard.budget', 'Budget'), desc: t('settings.budget_desc', 'Sankey flows'), color: 'purple', iconPath: 'M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z' },
-        { id: 'splitwise', label: t('dashboard.splitwise', 'Splitwise'), desc: t('settings.splitwise_desc', 'Shared Expenses'), color: 'green', iconPath: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
+        { id: 'splitwise', label: t('dashboard.splitwise', 'Splitwise'), desc: t('settings.splitwise_desc', 'Shared Expenses'), color: 'green', iconPath: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656-.126-1.283-.356-1.857m0 0a5.002 5.025 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
         { id: 'family', label: t('dashboard.family', 'Family'), desc: t('settings.family_desc', 'Household Expenses'), color: 'pink', iconPath: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
         { id: 'fund', label: t('dashboard.fund', 'Fund'), desc: t('settings.fund_desc', 'Mutual Funds'), color: 'indigo', iconPath: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' },
         { id: 'futures', label: t('dashboard.futures', 'Futures'), desc: t('settings.futures_desc', 'Futures Trading'), color: 'red', iconPath: 'M13 10V3L4 14h7v7l9-11h-7z' },
@@ -50,18 +92,50 @@ export const ModuleSettings: React.FC = () => {
                                 <div className="text-gray-500 text-xs">{mod.desc}</div>
                             </div>
                         </div>
-                        <button
-                            // @ts-ignore
-                            onClick={() => toggleModule(mod.id)}
-                            // @ts-ignore
-                            className={`w-12 h-6 rounded-full transition-colors duration-300 relative ${settings.modules[mod.id] ? 'bg-blue-500' : 'bg-gray-600'}`}
-                        >
-                            {/* @ts-ignore */}
-                            <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 ${settings.modules[mod.id] ? 'translate-x-6' : ''}`} />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            {errorModule === mod.id && (
+                                <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse" title="保存失敗" />
+                            )}
+                            <button
+                                // @ts-ignore
+                                onClick={() => toggleModule(mod.id)}
+                                // @ts-ignore
+                                className={`w-12 h-6 rounded-full transition-colors duration-300 relative ${
+                                    savingModule === mod.id 
+                                        ? (settings.modules[mod.id] 
+                                            ? 'bg-blue-500/50'
+                                            : 'bg-gray-500/50')
+                                        : (errorModule === mod.id 
+                                            ? 'bg-red-500'
+                                            : (settings.modules[mod.id] 
+                                                ? 'bg-blue-500' 
+                                                : 'bg-gray-600'))
+                                }`}
+                                disabled={savingModule !== null}
+                            >
+                                {/* @ts-ignore */}
+                                <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 ${
+                                    settings.modules[mod.id] ? 'translate-x-6' : ''
+                                } ${
+                                    errorModule === mod.id ? 'animate-pulse' : ''
+                                }`} />
+                            </button>
+                        </div>
                     </div>
                 ))}
             </div>
+            
+            {/* 錯誤提示 */}
+            {errorModule && (
+                <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                    <div className="flex items-center gap-2 text-red-400 text-sm">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>保存設定失敗，請檢查網路連線後重試</span>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

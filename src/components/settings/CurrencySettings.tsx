@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { simpleDriveService } from '../../services/simpleDrive';
-import type { UserSettings } from '../../services/simpleDrive';
+import type { UserSettings } from '../../services/userSettingsService';
 
 export const CurrencySettings: React.FC = () => {
     const { t } = useTranslation();
@@ -14,18 +14,25 @@ export const CurrencySettings: React.FC = () => {
     }, []);
 
     const loadSettings = async () => {
-        const s = await simpleDriveService.getSettings();
-        setSettings(s);
+        try {
+            const data = await simpleDriveService.getSettings();
+            setSettings(data);
+        } catch (error) {
+            console.error("Failed to load settings", error);
+        }
     };
 
     const handleAdd = async () => {
         if (!newCurrency || !settings) return;
         const upper = newCurrency.toUpperCase().trim();
-        if (settings.customCurrencies?.includes(upper)) return;
-
+        
+        // 新的結構中，我們可以將自定義貨幣添加到 preferences 中
         const updated = {
             ...settings,
-            customCurrencies: [...(settings.customCurrencies || ['TWD', 'USD']), upper]
+            preferences: {
+                ...settings.preferences,
+                customCurrencies: [...(settings.preferences.customCurrencies || ['TWD', 'USD', 'JPY']), upper]
+            }
         };
         await simpleDriveService.saveSettings(updated);
         setSettings(updated);
@@ -39,7 +46,10 @@ export const CurrencySettings: React.FC = () => {
 
         const updated = {
             ...settings,
-            customCurrencies: settings.customCurrencies?.filter(c => c !== curr) || []
+            preferences: {
+                ...settings.preferences,
+                customCurrencies: settings.preferences.customCurrencies?.filter(c => c !== curr) || []
+            }
         };
         await simpleDriveService.saveSettings(updated);
         setSettings(updated);
@@ -57,7 +67,7 @@ export const CurrencySettings: React.FC = () => {
             <h3 className="text-gray-300 font-bold mb-4">{t('settings.currency_settings', 'Currency Settings')}</h3>
 
             <div className="flex flex-wrap gap-2 mb-4">
-                {settings.customCurrencies?.map(curr => (
+                {settings.preferences.customCurrencies?.map(curr => (
                     <div key={curr} className="flex items-center gap-2 bg-gray-900 px-3 py-1.5 rounded-lg border border-gray-600">
                         <span className="text-white font-bold">{curr}</span>
                         <button

@@ -30,7 +30,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
 
                 <div className="flex justify-between items-center mb-0">
                     <h2 className="text-xl font-bold text-white">
-                        {initialData ? 'Edit Transaction' : t('transaction.new')}
+                        {initialData ? t('transaction.edit', 'Edit Transaction') : t('transaction.new')}
                     </h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-white">
                         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

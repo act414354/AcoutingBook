@@ -1,5 +1,6 @@
 /// <reference types="gapi.client.drive-v3" />
 import { gapi } from 'gapi-script';
+import { userSettingsService, type UserSettings } from './userSettingsService';
 
 // 簡化的 Google Drive 配置
 const GOOGLE_CONFIG = {
@@ -19,90 +20,6 @@ export interface UserData {
     imageUrl: string;
     isGuest?: boolean;
 }
-
-export interface UserSettings {
-    categories: {
-        expense: string[];
-        income: string[];
-    };
-    accounts: {
-        id: string;
-        name: string;
-        type: 'cash' | 'bank' | 'credit' | 'ewallet' | 'securities' | 'exchange';
-        balance: number;
-        currency: string; // Default 'TWD'
-        properties?: {
-            linkedAccountId?: string;
-            creditCard?: {
-                statementDay: number;
-                paymentDay: number;
-                autoPayAccountId?: string;
-                businessDayLogic: 'delay' | 'advance'; // 遇假日順延或提前
-            };
-            eWallet?: {
-                autoTopUp: boolean;
-                threshold?: number;
-                amount?: number;
-                topUpFromAccountId?: string;
-            };
-            securities?: {
-                feeDiscount: number; // User input: 1 = 0.1, 2.8 = 0.28
-                minFee: number;
-            };
-        };
-    }[];
-    modules: {
-        invest: boolean;
-        budget: boolean;
-        splitwise: boolean;
-        family: boolean;
-        fund: boolean;
-        futures: boolean;
-        tw_stock: boolean;
-        us_stock: boolean;
-        crypto: boolean;
-        metal: boolean;
-        real_estate: boolean;
-        exchange_rate: boolean; // New Module
-    };
-    homeWidgets: {
-        asset_card: boolean;
-        t_plus_two: boolean;
-        transactions: boolean;
-    };
-    customCurrencies: string[]; // New: User defined currencies
-}
-
-const DEFAULT_SETTINGS: UserSettings = {
-    categories: {
-        expense: ['food', 'transport', 'housing', 'entertainment', 'education', 'health', 'other'],
-        income: ['salary', 'bonus', 'investment', 'other']
-    },
-    accounts: [
-        { id: 'acc_cash', name: 'Cash', type: 'cash', balance: 0, currency: 'TWD' },
-        { id: 'acc_bank', name: 'Bank', type: 'bank', balance: 0, currency: 'TWD' }
-    ],
-    modules: {
-        invest: false,
-        budget: false,
-        splitwise: true,
-        family: false,
-        fund: false,
-        futures: false,
-        tw_stock: false,
-        us_stock: false,
-        crypto: false,
-        metal: false,
-        real_estate: false,
-        exchange_rate: false // Default off
-    },
-    homeWidgets: {
-        asset_card: true,
-        t_plus_two: true,
-        transactions: true
-    },
-    customCurrencies: ['TWD', 'USD', 'JPY'] // Default currencies
-};
 
 // 區塊鏈核心結構
 export interface Transaction {
@@ -149,9 +66,6 @@ class SimpleDriveService {
 
     // Cache for Guest Mode traversal
     private mockChainCache = new Map<string, Transaction>();
-
-    // Settings Cache
-    private cachedSettings: UserSettings | null = null;
 
     // 接替訪客登入
     async loginAsGuest(): Promise<UserData> {
@@ -340,47 +254,99 @@ class SimpleDriveService {
         if (this.isGuestMode) return this.latestBlock;
 
         try {
-            console.log("Syncing latest block from Drive...");
-            const folderId = await this.ensureAppFolder();
-
-            // Search for transaction blocks
-            // Note: properties query syntax: "properties has { key='type' and value='transaction_block' }"
-            const query = `'${folderId}' in parents and properties has { key='type' and value='transaction_block' } and trashed=false`;
-
-            const response = await gapi.client.drive.files.list({
-                q: query,
-                orderBy: 'createdTime desc',
-                pageSize: 1,
-                fields: 'files(id, name, createdTime)'
-            });
-
-            const files = response.result.files || [];
-
-            if (files.length > 0) {
-                const latestFile = files[0];
-                console.log("Found latest block file:", latestFile.name);
-
-                // Download content
-                const contentRes = await gapi.client.drive.files.get({
-                    fileId: latestFile.id!,
-                    alt: 'media'
-                });
-
-                const blockData = contentRes.result as unknown as Transaction;
-                // Basic validation
-                if (blockData && blockData.id && blockData.snapshot) {
-                    this.latestBlock = blockData;
-                    console.log("Synced latest block state:", this.latestBlock.snapshot);
-                    return this.latestBlock;
-                }
-            } else {
-                console.log("No existing blockchain found. Starting fresh.");
+            console.log("� 開始同步最新的每日交易檔案...");
+            
+            // 使用 dailyTransactionService 讀取所有交易
+            const { dailyTransactionService } = await import('./dailyTransactionService');
+            const transactions = await dailyTransactionService.getHistory(1000); // 讀取更多交易來重建快照
+            
+            if (transactions.length === 0) {
+                console.log("📁 沒有找到任何交易記錄，開始新的區塊鏈");
+                return null;
             }
-        } catch (error) {
-            console.error("Sync failed:", error);
-        }
 
-        return null;
+            console.log(`📊 找到 ${transactions.length} 筆交易，開始重建快照...`);
+            
+            // 按時間順序處理交易來重建快照
+            const sortedTransactions = transactions.sort((a, b) => a.timestamp - b.timestamp);
+            
+            let latestSnapshot: { totalAssets: Record<string, number>, accounts: Record<string, Record<string, number>> } = {
+                totalAssets: {},
+                accounts: {}
+            };
+            
+            let latestTransaction: Transaction | null = null;
+            
+            for (const tx of sortedTransactions) {
+                console.log(`🔍 處理交易: ${tx.id}, 類型: ${tx.type}, 金額: ${tx.payload.amount}, 帳戶: ${tx.payload.accountId}`);
+                
+                // 模擬處理交易來更新快照
+                const accountId = tx.payload.accountId;
+                const currency = tx.payload.currency || 'TWD';
+                const amount = tx.payload.amount;
+                
+                if (!latestSnapshot.accounts[accountId]) {
+                    latestSnapshot.accounts[accountId] = {};
+                }
+                
+                if (tx.type === 'income') {
+                    // 收入：增加餘額
+                    latestSnapshot.accounts[accountId][currency] = (latestSnapshot.accounts[accountId][currency] || 0) + amount;
+                    latestSnapshot.totalAssets[currency] = (latestSnapshot.totalAssets[currency] || 0) + amount;
+                    console.log(`💰 收入: ${accountId} +${amount} ${currency} = ${latestSnapshot.accounts[accountId][currency]}`);
+                } else if (tx.type === 'expense') {
+                    // 支出：減少餘額
+                    latestSnapshot.accounts[accountId][currency] = (latestSnapshot.accounts[accountId][currency] || 0) - amount;
+                    latestSnapshot.totalAssets[currency] = (latestSnapshot.totalAssets[currency] || 0) - amount;
+                    console.log(`💸 支出: ${accountId} -${amount} ${currency} = ${latestSnapshot.accounts[accountId][currency]}`);
+                } else if (tx.type === 'transfer') {
+                    // 轉帳：從一個帳戶轉到另一個帳戶
+                    const toAccountId = tx.payload.toAccountId;
+                    if (!toAccountId) {
+                        console.warn('⚠️ 轉帳交易缺少目標帳戶');
+                        continue;
+                    }
+                    const targetCurrency = tx.payload.targetCurrency || currency;
+                    const targetAmount = tx.payload.targetAmount || amount;
+                    
+                    // 減少來源帳戶
+                    if (!latestSnapshot.accounts[accountId]) {
+                        latestSnapshot.accounts[accountId] = {};
+                    }
+                    latestSnapshot.accounts[accountId][currency] = (latestSnapshot.accounts[accountId][currency] || 0) - amount;
+                    
+                    // 增加目標帳戶
+                    if (!latestSnapshot.accounts[toAccountId]) {
+                        latestSnapshot.accounts[toAccountId] = {};
+                    }
+                    latestSnapshot.accounts[toAccountId][targetCurrency] = (latestSnapshot.accounts[toAccountId][targetCurrency] || 0) + targetAmount;
+                    
+                    console.log(`🔄 轉帳: ${accountId} -> ${toAccountId}, ${amount} ${currency} -> ${targetAmount} ${targetCurrency}`);
+                }
+                
+                // 轉換為 Transaction 格式
+                latestTransaction = {
+                    id: tx.id,
+                    timestamp: tx.timestamp,
+                    type: tx.type,
+                    prev_id: tx.prev_id,
+                    payload: tx.payload,
+                    snapshot: { ...latestSnapshot }
+                };
+            }
+            
+            if (latestTransaction) {
+                console.log("✅ 快照重建完成，最新交易:", latestTransaction.id);
+                console.log("📊 最新快照:", latestSnapshot);
+                this.latestBlock = latestTransaction;
+                return latestTransaction;
+            }
+            
+            return null;
+        } catch (error) {
+            console.error("❌ 同步失敗:", error);
+            return null;
+        }
     }
 
     // 2. 獲取交易歷史 (並處理影子修正)
@@ -442,10 +408,18 @@ class SimpleDriveService {
 
         // 2. Fetch from Drive
         try {
-            const folderId = await this.ensureAppFolder();
+            // 使用每日交易檔案服務保存，不再使用 tx_*.json 格式
+            console.log("💾 使用每日交易檔案格式保存交易");
+            
+            // 轉換為每日交易格式並保存
+            const { blockchainTransactionService } = await import('./blockchainTransactionService');
+            const accountName = "default"; // 可以從上下文獲取
+            // await blockchainTransactionService.saveBlockToDrive(newBlock, accountName, newBlock.type);
+            
+            // 直接在 Google Drive 根目錄搜尋，不使用資料夾
             // Filename format: tx_{timestamp}_{uuid}.json
             // We search by "name contains uuid" to be safe
-            const query = `'${folderId}' in parents and name contains '${uuid}' and trashed=false`;
+            const query = `name contains '${uuid}' and trashed=false`;
 
             const response = await gapi.client.drive.files.list({
                 q: query,
@@ -483,11 +457,11 @@ class SimpleDriveService {
         const prevBlock = this.latestBlock;
         const prevSnapshot = prevBlock ? prevBlock.snapshot : { totalAssets: {}, accounts: {} };
         const newAccounts: Record<string, Record<string, number>> = JSON.parse(JSON.stringify(prevSnapshot.accounts || {}));
-        const newTotalAssets: Record<string, number> = { ...prevSnapshot.totalAssets };
+        const newTotalAssets: Record<string, number> = JSON.parse(JSON.stringify(prevSnapshot.totalAssets));
 
         const revert = (tx: Transaction) => {
             const qty = tx.payload.amount;
-            const curr = tx.payload.currency;
+            const curr = tx.payload.currency || 'TWD';
             const acc = tx.payload.accountId;
             const type = tx.type;
 
@@ -505,7 +479,7 @@ class SimpleDriveService {
                 newAccounts[acc][curr] = (newAccounts[acc][curr] || 0) + qty;
                 newTotalAssets[curr] = (newTotalAssets[curr] || 0) + qty;
 
-                const tAcc = tx.payload.toAccountId!;
+                const tAcc = tx.payload.toAccountId;
                 const tCurr = tx.payload.targetCurrency || curr;
                 const tQty = tx.payload.targetAmount || qty;
 
@@ -516,7 +490,7 @@ class SimpleDriveService {
 
         const apply = (payload: Transaction['payload'], type: Transaction['type']) => {
             const qty = payload.amount;
-            const curr = payload.currency;
+            const curr = payload.currency || 'TWD';
             const acc = payload.accountId;
 
             if (!newAccounts[acc]) newAccounts[acc] = {};
@@ -532,7 +506,7 @@ class SimpleDriveService {
                 newAccounts[acc][curr] = (newAccounts[acc][curr] || 0) - qty;
                 newTotalAssets[curr] = (newTotalAssets[curr] || 0) - qty;
 
-                const tAcc = payload.toAccountId!;
+                const tAcc = payload.toAccountId;
                 const tCurr = payload.targetCurrency || curr;
                 const tQty = payload.targetAmount || qty;
 
@@ -582,7 +556,9 @@ class SimpleDriveService {
         note: string,
         accountId: string = 'acc_cash', // Default
         options?: {
+            currency?: string;
             toAccountId?: string;
+            targetCurrency?: string;
             exchangeRate?: number;
             targetAmount?: number;
             date?: number;
@@ -591,40 +567,66 @@ class SimpleDriveService {
 
         // 1. 準備上一筆資料 (Snapshot & ID)
         const prevBlock = this.latestBlock;
-        const prevSnapshot = prevBlock ? prevBlock.snapshot : { totalAssets: 0, accounts: {} };
-        const currentAssets = prevSnapshot.totalAssets;
+        const prevSnapshot = prevBlock ? prevBlock.snapshot : { totalAssets: {}, accounts: {} };
+        const currentAssets = prevSnapshot.totalAssets || {};
         const currentAccounts = prevSnapshot.accounts || {};
+
+        // Get currency from options or default to TWD
+        const currency = options?.currency || 'TWD';
 
         // Asset logic
         let changeAmount = 0;
         if (type === 'expense') changeAmount = -Math.abs(amount);
         else if (type === 'income') changeAmount = Math.abs(amount);
-        // Transfer: No change to total assets (in base currency), unless exchange rate involved...
-        // For simplicity, if same currency, 0 change to Total. If different, we might track Total in Base Currency.
-        // Let's assume Total Assets is strictly Sum of (Balance * Rate). 
-        // For now, keep simple: Transfer doesn't change Total Assets if we ignore rate fluctuation during transfer.
 
-        const newAccounts = { ...currentAccounts };
+        // Deep copy accounts to avoid readonly property issues
+        const newAccounts: Record<string, Record<string, number>> = JSON.parse(JSON.stringify(currentAccounts));
+        const newTotalAssets: Record<string, number> = JSON.parse(JSON.stringify(currentAssets));
+
+        // Fix: Aggressively migrate ALL legacy accounts (number -> object)
+        Object.keys(newAccounts).forEach(accId => {
+            if (typeof newAccounts[accId] === 'number') {
+                console.warn(`[Auto-Fix] Migrating legacy account ${accId} from number to object...`);
+                // @ts-ignore
+                const oldBalance = newAccounts[accId];
+                // Default to TWD for legacy migration if currency not known, but ideal to use current context
+                newAccounts[accId] = { 'TWD': oldBalance };
+            }
+        });
+
+        const ensureAccount = (accId: string, curr: string = 'TWD') => {
+            if (!newAccounts[accId]) newAccounts[accId] = {};
+            // Double check migration just in case
+            if (typeof newAccounts[accId] === 'number') {
+                // @ts-ignore
+                const val = newAccounts[accId];
+                newAccounts[accId] = { 'TWD': val };
+            }
+
+            if (typeof newAccounts[accId][curr] === 'undefined') newAccounts[accId][curr] = 0;
+        };
+
+        const ensureAsset = (curr: string) => {
+            if (!newTotalAssets[curr]) newTotalAssets[curr] = 0;
+        };
+
+        ensureAccount(accountId, currency);
+        ensureAsset(currency);
 
         if (type === 'transfer' && options?.toAccountId) {
             // Deduct from Source
-            newAccounts[accountId] = (newAccounts[accountId] || 0) - Math.abs(amount);
+            newAccounts[accountId][currency] = (newAccounts[accountId][currency] || 0) - Math.abs(amount);
+
             // Add to Target
             const targetAmt = options.targetAmount !== undefined ? options.targetAmount : Math.abs(amount);
-            newAccounts[options.toAccountId] = (newAccounts[options.toAccountId] || 0) + targetAmt;
+            const targetCurrency = options.targetCurrency || currency;
+            ensureAccount(options.toAccountId, targetCurrency);
+            newAccounts[options.toAccountId][targetCurrency] = (newAccounts[options.toAccountId][targetCurrency] || 0) + targetAmt;
         } else {
             // Normal Expense/Income
-            // Update Account Balance
-            newAccounts[accountId] = (newAccounts[accountId] || 0) + changeAmount;
+            newAccounts[accountId][currency] = (newAccounts[accountId][currency] || 0) + changeAmount;
+            newTotalAssets[currency] = (newTotalAssets[currency] || 0) + changeAmount;
         }
-
-        // Re-calculate Total Assets based on new balances? 
-        // Or just apply delta?
-        // If we want Total Net Worth, we should ideally sum up all accounts.
-        // But we don't have rates for all accounts here. 
-        // So we fallback to: Total Assets = Previous + Change.
-        // For transfer, Change is 0 (money moved, not lost/gained).
-        const newAssets = currentAssets + changeAmount;
 
         // 2. 建立新區塊
         const newBlock: Transaction = {
@@ -640,7 +642,7 @@ class SimpleDriveService {
                 ...options
             },
             snapshot: {
-                totalAssets: newAssets,
+                totalAssets: newTotalAssets,
                 accounts: newAccounts
             }
         };
@@ -654,28 +656,48 @@ class SimpleDriveService {
         }
 
         try {
-            await this.uploadBlockToDrive(newBlock);
+            // 不再在這裡保存，因為 blockchainTransactionService.saveTransaction 已經處理了
+            console.log("📝 appendTransaction 已被 blockchainTransactionService.saveTransaction 取代");
+            console.log("💾 交易已通過新的每日交易檔案格式保存");
+            
+            // 只更新內存狀態，不創建檔案
             this.latestBlock = newBlock;
-            // Legacy sync side-effect (read file id if exists)
-            try {
-                const folderId = await this.ensureAppFolder();
-                await this.searchDataFile(folderId);
-            } catch (e) { console.warn("Legacy search failed", e); }
-
+            console.log("✅ 內存狀態已更新");
+            
             return newBlock;
         } catch (error) {
-            console.error("Failed to upload block:", error);
+            console.error("Failed to upload block:", error instanceof Error ? error.message : error);
             throw error;
         }
     }
 
     // 上傳單一區塊到 Drive
     private async uploadBlockToDrive(block: Transaction): Promise<void> {
-        const folderId = await this.ensureAppFolder();
+        // 獲取 QuickBook Data 資料夾
+        const folderResponse = await gapi.client.drive.files.list({
+            q: "name='QuickBook Data' and mimeType='application/vnd.google-apps.folder' and trashed=false",
+            fields: 'files(id, name)'
+        });
+
+        const folders = folderResponse.result.files || [];
+        if (folders.length === 0) {
+            throw new Error("QuickBook Data 資料夾不存在");
+        }
+
+        const folderId = folders[0].id!;
+        console.log("💾 上傳區塊到 QuickBook Data 資料夾:", folderId);
+
+        // Explicitly get the token from GAPI
+        // @ts-ignore
+        const tokenObj = gapi.client.getToken();
+        if (!tokenObj || !tokenObj.access_token) {
+            throw new Error("No access token available. Please sign in again.");
+        }
+        const accessToken = tokenObj.access_token;
 
         const metadata = {
             name: `tx_${block.timestamp}_${block.id}.json`,
-            parents: [folderId],
+            parents: [folderId], // 指定保存到 QuickBook Data 資料夾
             properties: {
                 type: 'transaction_block',
                 prev_id: block.prev_id || 'genesis'
@@ -695,101 +717,55 @@ class SimpleDriveService {
             JSON.stringify(block, null, 2) +
             close_delim;
 
-        const request = gapi.client.request({
-            path: '/upload/drive/v3/files',
-            method: 'POST',
-            params: { 'uploadType': 'multipart' },
-            headers: {
-                'Content-Type': 'multipart/related; boundary="' + boundary + '"'
-            },
-            body: multipartRequestBody
-        });
-
-        return new Promise((resolve, reject) => {
-            request.execute((file: any) => {
-                if (file.error) {
-                    reject(file.error);
-                } else {
-                    console.log("Block uploaded to Drive:", file.id);
-                    resolve(file);
-                }
+        try {
+            const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': `multipart/related; boundary="${boundary}"`
+                },
+                body: multipartRequestBody
             });
-        });
-    }
 
-    // 確保 App 資料夾存在
-    private async ensureAppFolder(): Promise<string> {
-        const query = "mimeType='application/vnd.google-apps.folder' and name='QuickBook' and trashed=false";
-        const response = await gapi.client.drive.files.list({
-            q: query,
-            fields: 'files(id, name)'
-        });
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error("Include Upload Error Details:", errorData);
+                throw new Error(errorData.error?.message || `Upload failed with status ${response.status}`);
+            }
 
-        const files = response.result.files || [];
-        if (files.length > 0) {
-            return files[0].id!;
+            const result = await response.json();
+            console.log("Block uploaded to Drive:", result.id);
+        } catch (error) {
+            console.error("Fetch Upload Error:", error);
+            throw error;
         }
-
-        const metadata = {
-            name: 'QuickBook',
-            mimeType: 'application/vnd.google-apps.folder'
-        };
-
-        const createRes = await gapi.client.drive.files.create({
-            resource: metadata,
-            fields: 'id'
-        });
-
-        return createRes.result.id!;
     }
 
-    // 搜尋現有的資料檔案
-    private async searchDataFile(folderId: string): Promise<gapi.client.drive.File[]> {
-        // Updated to not filter strictly by exact name, but keeping compatibility
-        const query = `name='${GOOGLE_CONFIG.DATA_FILE_NAME}' and '${folderId}' in parents and trashed=false`;
+    // 搜尋現有的資料檔案 - 在 Google Drive 根目錄
+    private async searchDataFileInRoot(): Promise<gapi.client.drive.File[]> {
+        // 直接在根目錄搜尋資料檔案
+        const query = `name='${GOOGLE_CONFIG.DATA_FILE_NAME}' and trashed=false`;
         const response = await gapi.client.drive.files.list({
             q: query,
             fields: 'files(id, name, createdTime, modifiedTime)'
         });
         const files = response.result.files || [];
         if (files.length > 0) {
-            // this.dataFileId = files[0].id!;
+            console.log("Found existing data file:", files[0].name);
         }
         return files;
     }
 
     // -------------------------------------------------------------
-    // Settings Management
+    // Settings Management - 使用新的 userSettingsService
     // -------------------------------------------------------------
 
     async getSettings(): Promise<UserSettings> {
-        if (this.cachedSettings) return this.cachedSettings;
-
-        if (this.isGuestMode) {
-            // Guest Mode: Return defaults or cached
-            this.cachedSettings = DEFAULT_SETTINGS;
-            return this.cachedSettings;
-        }
-
-        // Real Drive: Try to load 'user_config.json'
-        // For now, allow fallback to defaults if not found
-        // TODO: Implement actual Drive File Read for settings
-        console.log("Loading settings from Drive... (Mocking fallback)");
-        this.cachedSettings = DEFAULT_SETTINGS;
-        return this.cachedSettings;
+        return await userSettingsService.getSettings() || await userSettingsService.initialize();
     }
 
     async saveSettings(settings: UserSettings): Promise<void> {
-        this.cachedSettings = settings;
-
-        if (this.isGuestMode) {
-            console.log("[Guest] Settings Saved:", settings);
-            return;
-        }
-
-        // Real Drive: Upload 'user_config.json'
-        console.log("Saving settings to Drive...", settings);
-        // TODO: Implement actual Drive File Write
+        await userSettingsService.updateSettings(settings);
     }
 
     // 5. 獲取分類使用頻率

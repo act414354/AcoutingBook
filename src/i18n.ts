@@ -1,6 +1,5 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
 
 // Import translation files
 import zhTW from './locales/zh-TW.json';
@@ -28,7 +27,6 @@ const resources = {
 };
 
 i18n
-    .use(LanguageDetector)
     .use(initReactI18next)
     .init({
         resources,
@@ -36,9 +34,10 @@ i18n
         interpolation: {
             escapeValue: false, // React already safes from xss
         },
+        // 移除 localStorage 檢測，語言設定將完全由用戶設定檔控制
         detection: {
-            order: ['localStorage', 'navigator', 'htmlTag'],
-            caches: ['localStorage'],
+            order: ['navigator', 'htmlTag'],
+            caches: [], // 不緩存到 localStorage
         },
     });
 

@@ -1,0 +1,82 @@
+{
+  "block_header": {
+    "version": "1.0",
+    "date": "2026-02-02",
+    "block_height": 105,
+    "prev_block_hash": "a1b2c3d4...",
+    "transaction_count": 3,
+    "exchange_rates": {                      // [當日匯率記錄區塊]
+      "base_currency": "TWD",               // 以台幣為基準貨幣
+      "rates": {
+        "USD": 32.55,                       // 1 USD = 32.55 TWD
+        "JPY": 0.215,                       // 1 JPY = 0.215 TWD
+        "EUR": 35.12                        // 1 EUR = 35.12 TWD
+      },
+      "source": "Bank of Taiwan / Open API" // 記錄匯率來源，增加可信度
+    },
+    "balances_snapshot": {                  // [帳戶餘額快照]
+      "001_cash_cash_TWD": { "amount": 1990, "currency": "TWD" },
+      "001_cash_cash_USD": { "amount": 0, "currency": "USD" },
+      "002_bank_bank_TWD": { "amount": 0, "currency": "TWD" },
+      "002_bank_bank_USD": { "amount": 200, "currency": "USD" },
+      "003_credit_card_TWD": { "amount": 0, "currency": "TWD" },
+      "004_investment_TWD": { "amount": 0, "currency": "TWD" }
+    }
+  },
+  "transactions": [
+    {
+      "tx_id": "tx_20260202_001",
+      "time": "",
+      "type": "expense",                        // 1. 記錄類型
+      "category": "娛樂",                    // 6. 分類
+      "debit": {                             // 3. 支出帳戶
+        "account": "001_cash_cash",
+        "amount": 6510,                      // 2. 支出金額 (TWD)
+        "currency": "TWD"
+      },
+      "credit": {                            // 5. 收入帳戶
+        "account": "002_bank_bank",
+        "amount": 200,                       // 4. 收入金額 (USD)
+        "currency": "USD"
+      },
+      "note": "換美金準備旅遊",               // 7. 備註
+      "tx_hash": "e8d7c6b5..."
+    },
+    {
+      "tx_id": "tx_20260202_002",
+      "time": "",
+      "type": "income",                        // 1. 記錄類型
+      "category": "餐飲",                    // 6. 分類
+      "debit": {                             // 3. 支出帳戶
+        "account": "001_cash_cash",
+        "amount": 500,                      // 2. 支出金額 (TWD)
+        "currency": "TWD"
+      },
+      "credit": {                            // 5. 收入帳戶
+        "account": "001_cash_cash",
+        "amount": 500,                       // 4. 收入金額 (TWD)
+        "currency": "TWD"
+      },
+      "note": "餐飲收入",               // 7. 備註
+      "tx_hash": "f9g8h7i6..."
+    },
+    {
+      "tx_id": "tx_20260202_003",
+      "time": "",
+      "type": "expense",                        // 1. 記錄類型
+      "category": "交通",                    // 6. 分類
+      "debit": {                             // 3. 支出帳戶
+        "account": "001_cash_cash",
+        "amount": 1000,                      // 2. 支出金額 (TWD)
+        "currency": "TWD"
+      },
+      "credit": null,
+      "note": "交通費用",               // 7. 備註
+      "tx_hash": "a1b2c3d4..."
+    }
+  ],
+  "block_signature": {
+    "hash": "7d6e5f4c...",
+    "signed_by": "user_private_key_id"
+  }
+}

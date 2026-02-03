@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { UserSettings } from '../../services/simpleDrive';
+import type { UserSettings } from '../../services/userSettingsService';
 
 interface AccountFormProps {
     isOpen: boolean;
@@ -11,34 +11,34 @@ interface AccountFormProps {
     onSave: (accountData: any) => Promise<void>;
 }
 
-export const AccountForm: React.FC<AccountFormProps> = ({ 
-    isOpen, 
-    onClose, 
-    mode, 
-    settings, 
+export const AccountForm: React.FC<AccountFormProps> = ({
+    isOpen,
+    onClose,
+    mode,
+    settings,
     initialData,
-    onSave 
+    onSave
 }) => {
     const { t } = useTranslation();
 
     // Form State
     const [accountName, setAccountName] = useState('');
     const [accountType, setAccountType] = useState<'cash' | 'bank' | 'credit' | 'ewallet' | 'securities' | 'exchange'>('cash');
-    const [initialBalance, setInitialBalance] = useState<number>(0);
-    
+    const [initialBalanceInput, setInitialBalanceInput] = useState<string>('');
+
     // Credit Card Fields
     const [statementDay, setStatementDay] = useState<number>(1);
     const [paymentDay, setPaymentDay] = useState<number>(1);
     const [autoPaymentAccountId, setAutoPaymentAccountId] = useState<string>('');
-    
+
     // E-Wallet Fields
     const [autoTopUp, setAutoTopUp] = useState(false);
     const [topUpAmount, setTopUpAmount] = useState<number>(1000);
-    
+
     // Securities Fields
     const [feeDiscount, setFeeDiscount] = useState<number>(1);
     const [minFee, setMinFee] = useState<number>(20);
-    
+
     // Linking
     const [linkedAccountId, setLinkedAccountId] = useState('');
 
@@ -47,26 +47,26 @@ export const AccountForm: React.FC<AccountFormProps> = ({
         if (mode === 'edit' && initialData) {
             setAccountName(initialData.name || '');
             setAccountType(initialData.type || 'cash');
-            setInitialBalance(initialData.balance || 0);
-            
+            setInitialBalanceInput(initialData.initialBalance !== undefined && initialData.initialBalance !== null ? String(initialData.initialBalance) : '');
+
             const props = initialData.properties;
-            
+
             if (initialData.type === 'credit' && props?.creditCard) {
                 setStatementDay(props.creditCard.statementDay || 1);
                 setPaymentDay(props.creditCard.paymentDay || 10);
                 setAutoPaymentAccountId(props.creditCard.autoPayAccountId || '');
             }
-            
+
             if (initialData.type === 'ewallet' && props?.eWallet) {
                 setAutoTopUp(props.eWallet.autoTopUp || false);
                 setTopUpAmount(props.eWallet.amount || 1000);
             }
-            
+
             if (initialData.type === 'securities' && props?.securities) {
                 setFeeDiscount(props.securities.feeDiscount || 1);
                 setMinFee(props.securities.minFee || 20);
             }
-            
+
             if ((initialData.type === 'ewallet' || initialData.type === 'securities' || initialData.type === 'exchange') && props?.linkedAccountId) {
                 setLinkedAccountId(props.linkedAccountId || '');
             }
@@ -74,7 +74,7 @@ export const AccountForm: React.FC<AccountFormProps> = ({
             // Reset form for add mode
             setAccountName('');
             setAccountType('cash');
-            setInitialBalance(0);
+            setInitialBalanceInput('');
             setStatementDay(1);
             setPaymentDay(10);
             setAutoPaymentAccountId('');
@@ -89,10 +89,12 @@ export const AccountForm: React.FC<AccountFormProps> = ({
     const handleSubmit = async () => {
         if (!accountName) return;
 
+        const normalizedInitialBalance = initialBalanceInput.trim() === '' ? 0 : Number(initialBalanceInput);
+
         const accountData = {
             name: accountName,
             type: accountType,
-            balance: initialBalance,
+            initialBalance: Number.isFinite(normalizedInitialBalance) ? normalizedInitialBalance : 0,
             properties: {
                 linkedAccountId: (accountType === 'ewallet' || accountType === 'securities' || accountType === 'exchange') ? linkedAccountId : undefined,
                 creditCard: accountType === 'credit' ? {
@@ -170,8 +172,11 @@ export const AccountForm: React.FC<AccountFormProps> = ({
                         <label className="block text-xs text-gray-400 mb-1">{t('account_settings.initial_balance', '初始餘額')}</label>
                         <input
                             type="number"
-                            value={initialBalance}
-                            onChange={(e) => setInitialBalance(parseFloat(e.target.value) || 0)}
+                            value={initialBalanceInput}
+                            onChange={(e) => setInitialBalanceInput(e.target.value)}
+                            onBlur={() => {
+                                if (initialBalanceInput.trim() === '') setInitialBalanceInput('0');
+                            }}
                             className="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 text-white focus:border-blue-500 outline-none"
                         />
                     </div>
@@ -265,7 +270,7 @@ export const AccountForm: React.FC<AccountFormProps> = ({
                     {accountType === 'securities' && (
                         <div className="space-y-4">
                             <h4 className="text-sm font-medium text-gray-300 mb-2">{t('account_settings.fee_settings', '手續費設定')}</h4>
-                            
+
                             {/* Fee Discount */}
                             <div>
                                 <label className="block text-xs text-gray-400 mb-1">{t('account_settings.fee_discount', '手續費折扣')}</label>
@@ -279,11 +284,15 @@ export const AccountForm: React.FC<AccountFormProps> = ({
                                         onChange={(e) => setFeeDiscount(parseFloat(e.target.value) || 0)}
                                         className="flex-1 bg-gray-800 border border-gray-600 rounded-lg p-3 text-white"
                                     />
-                                    <span className="text-gray-400 text-sm">折</span>
+                                    <span className="text-gray-400 text-sm">{t('account_settings.discount_unit', 'x')}</span>
                                 </div>
                                 {feeDiscount && (
                                     <p className="text-xs text-blue-400 mt-1">
-                                        {`買${(0.1425 * feeDiscount / 10).toFixed(4)}% + 賣${(0.1425 * feeDiscount / 10).toFixed(4)}% + 交易稅0.3% = 總交易手續費${((0.1425 * feeDiscount / 10 * 2) + 0.3).toFixed(4)}%`}
+                                        {t('account_settings.fee_formula', {
+                                            buy: (0.1425 * feeDiscount / 10).toFixed(4),
+                                            sell: (0.1425 * feeDiscount / 10).toFixed(4),
+                                            total: ((0.1425 * feeDiscount / 10 * 2) + 0.3).toFixed(4)
+                                        })}
                                     </p>
                                 )}
                             </div>
@@ -300,8 +309,11 @@ export const AccountForm: React.FC<AccountFormProps> = ({
                                 />
                                 {settings?.accounts?.filter(acc => acc.type === 'securities' && acc.properties?.securities).map(acc => (
                                     <div key={acc.id} className="text-xs text-gray-500 mt-1">
-                                        {acc.properties?.securities && 
-                                            `最低交易金額(${Math.ceil(acc.properties.securities.minFee / ((0.1425 * acc.properties.securities.feeDiscount / 10 * 2) + 0.3) * 10000)}/總交易手續費${((0.1425 * acc.properties.securities.feeDiscount / 10 * 2) + 0.3).toFixed(4)}%)元`
+                                        {acc.properties?.securities &&
+                                            t('account_settings.min_trade_amount', {
+                                                amount: Math.ceil(acc.properties.securities.minFee / ((0.1425 * acc.properties.securities.feeDiscount / 10 * 2) + 0.3) * 10000),
+                                                fee: ((0.1425 * acc.properties.securities.feeDiscount / 10 * 2) + 0.3).toFixed(4)
+                                            })
                                         }
                                     </div>
                                 ))}

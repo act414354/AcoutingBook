@@ -1,0 +1,22 @@
+{
+  "incomplete_modules": [
+    "budget",
+    "splitwise", 
+    "invest",
+    "family",
+    "fund",
+    "futures",
+    "tw_stock",
+    "us_stock",
+    "crypto",
+    "metal",
+    "real_estate",
+    "exchange_rate"
+  ],
+  "message": {
+    "title": "功能即將上線",
+    "content": "如想要提前體驗請聯繫開發人員",
+    "duration": 5000
+  },
+  "last_updated": "2026-02-03T18:22:00Z"
+}

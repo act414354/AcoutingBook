@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import './i18n'; // Import i18n config
 import { SimpleAuthProvider, useSimpleAuth } from './context/SimpleAuthContext';
+import { languageService } from './services/languageService';
 import { MobileLayout } from './components/layout/MobileLayout';
 import { BottomNav } from './components/layout/BottomNav';
 import { AssetCard } from './components/dashboard/AssetCard';
@@ -41,6 +42,31 @@ const Dashboard = () => {
   const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<any>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // 初始化語言服務
+  useEffect(() => {
+    const initializeLanguage = async () => {
+      try {
+        await languageService.initialize();
+      } catch (error) {
+        console.error('語言服務初始化失敗:', error);
+      }
+    };
+
+    initializeLanguage();
+  }, [isAuthenticated]); // 當認證狀態改變時重新初始化
+
+  // 登入後自動顯示記錄頁面並開啟交易模態框
+  useEffect(() => {
+    if (isAuthenticated && !loading) {
+      // 設置活動標籤為記錄頁面
+      setActiveTab('record');
+      // 延遲一點時間再開啟模態框，確保頁面已經渲染
+      setTimeout(() => {
+        setShowTransactionModal(true);
+      }, 500);
+    }
+  }, [isAuthenticated, loading]);
 
   const handleTabChange = (id: string) => {
     setActiveTab(id);
@@ -121,8 +147,11 @@ const Dashboard = () => {
             </button>
           </div>
 
+          {/* 版本資訊顯示 */}
           <p className="mt-8 text-center text-xs text-gray-600 font-medium">
-            {t('app.version')}
+            {/* {t('app.version')} */}
+            {/* 額外的版本資訊 */}
+            {t("v1.10F.730203 • Make by Value Build • Secured by Google Drive")}
           </p>
         </div>
       </MobileLayout>
@@ -149,7 +178,7 @@ const Dashboard = () => {
         {activeTab === 'home' && (
           <>
             {/* 1. Asset Card */}
-            {settings?.homeWidgets?.asset_card !== false && (
+            {settings?.homeWidgets?.assetCard !== false && (
               <AssetCard
                 totalAssets={totalAssets}
                 dayChange={+15400}
@@ -161,7 +190,7 @@ const Dashboard = () => {
             <AccountBalanceCard />
 
             {/* 1.5 T+2 Widget */}
-            {settings?.homeWidgets?.t_plus_two !== false && (
+            {settings?.homeWidgets?.tPlusTwo !== false && (
               <TPlusTwoWidget
                 pendingSettlements={[]}
               />
@@ -184,10 +213,13 @@ const Dashboard = () => {
             onSuccess={handleSuccess}
             onEdit={handleEditTransaction}
             lastRefresh={refreshTrigger}
+            showTransactionModal={showTransactionModal}
+            onOpenTransactionModal={() => setShowTransactionModal(true)}
+            onCloseTransactionModal={() => setShowTransactionModal(false)}
           />
         )}
 
-        {activeTab === 'accounts' && <AccountsScreen lastRefresh={refreshTrigger} />}
+        {activeTab === 'accounts' && <AccountsScreen lastRefresh={refreshTrigger} onNavigateToSettings={() => setActiveTab('settings')} />}
 
         {activeTab === 'invest' && <InvestScreen />}
 
@@ -218,14 +250,9 @@ const Dashboard = () => {
                 <h3 className="text-white font-bold text-lg">{user?.name}</h3>
                 <p className="text-gray-400 text-sm">{user?.email}</p>
                 <span className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] bg-green-500/10 text-green-400 border border-green-500/20">
-                  Pro User
+                  {t('app.pro_user')}
                 </span>
               </div>
-            </div>
-
-            <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-              <h3 className="text-gray-300 font-semibold mb-4">{t('settings.language')}</h3>
-              <LanguageSwitcher />
             </div>
 
             <AccountSettings />
@@ -237,6 +264,40 @@ const Dashboard = () => {
             <HomeWidgetSettings />
 
             <CategorySettings />
+
+            <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+              <h3 className="text-gray-300 font-semibold mb-4">{t('settings.language')}</h3>
+              <LanguageSwitcher />
+            </div>
+
+            {/* Line@ and Community Buttons */}
+            <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+              <h3 className="text-gray-300 font-semibold mb-4">社群連結</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <a
+                  href="https://line.me/ti/p/@vb_dev"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-green-500/30"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M3.5 5.5C3.5 4.12 4.62 3 6 3h12c1.38 0 2.5 1.12 2.5 2.5v13c0 1.38-1.12 2.5-2.5 2.5H6c-1.38 0-2.5-1.12-2.5-2.5v-13zm7.5 3c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm3 0c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm-3 3c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm3 0c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z"/>
+                  </svg>
+                  官方 Line
+                </a>
+                <a
+                  href="https://line.me/ti/g2/1s3Hj1BuGJWcthRgUcj3fDg4xTc1tVg9wvU0_Q?utm_source=invitation&utm_medium=link_copy&utm_campaign=default"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  加入社群
+                </a>
+              </div>
+            </div>
 
             {/* Logout Button */}
             <button

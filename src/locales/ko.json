@@ -2,22 +2,27 @@
     "app": {
         "title": "QuickBook",
         "subtitle": "탈중앙화 가계부",
-        "version": "v1.0.0 • Google Drive로 보호됨",
+        "version": "v1.10F.730203 • Value Build 제작 • Google Drive로 보호됨",
         "welcome_back": "환영합니다",
         "sign_in_desc": "암호화된 장부에 액세스하려면 로그인하세요",
         "sign_in_google": "Google로 로그인",
         "try_demo": "데모 모드 체험",
-        "demo_mode_desc": "(계정 필요 없음)"
+        "demo_mode_desc": "(계정 필요 없음)",
+        "pro_user": "프로 사용자"
     },
     "common": {
         "logout": "로그아웃",
         "loading": "로딩 중...",
-        "error_load": "로드 실패"
-    },
-    "common": {
-        "logout": "로그아웃",
-        "loading": "로딩 중...",
-        "error_load": "로드 실패"
+        "error_load": "로드 실패",
+        "save": "저장",
+        "cancel": "취소",
+        "none": "없음",
+        "success": "성공!",
+        "error": "오류",
+        "add": "추가",
+        "delete": "삭제",
+        "edit": "편집",
+        "close": "닫기"
     },
     "dashboard": {
         "title": "대시보드",
@@ -29,8 +34,8 @@
         "no_pending": "대기 중인 결제 없음",
         "home": "홈",
         "budget": "예산",
-        "budget": "예산",
         "settings": "설정",
+        "accounts": "계좌",
         "account_balances": "계좌 잔액",
         "recent_activity": "최근 활동",
         "splitwise": "정산",
@@ -43,7 +48,8 @@
         "us_stock": "미국 주식",
         "crypto": "암호화폐",
         "metal": "귀금속",
-        "real_estate": "부동산"
+        "real_estate": "부동산",
+        "estimated_value": "추정 가치"
     },
     "invest": {
         "tab_short": "단기 투자 (T+2)",
@@ -86,7 +92,18 @@
         "widget_transactions": "최근 거래 목록",
         "manage_categories": "카테고리 관리",
         "add_category_placeholder": "새 카테고리...",
-        "confirm_delete_category": "이 카테고리를 삭제하시겠습니까?"
+        "confirm_delete_category": "이 카테고리를 삭제하시겠습니까?",
+        "currency_settings": "통화 설정",
+        "confirm_delete_currency": "통화를 삭제하시겠습니까?",
+        "add_category": "카테고리 추가",
+        "category_placeholder": "카테고리 이름 입력",
+        "category_list": "카테고리 목록",
+        "no_categories": "카테고리 없음",
+        "add_first_category": "위에서 첫 카테고리를 추가하세요",
+        "load_failed": "설정 로드 실패"
+    },
+    "modules": {
+        "exchange_rate": "환율 및 다중 통화"
     },
     "splitwise": {
         "title": "정산",
@@ -101,6 +118,8 @@
         "new": "새 거래",
         "expense": "지출",
         "income": "수입",
+        "transfer": "이체",
+        "exchange": "환전",
         "amount_label": "금액",
         "amount_placeholder": "0.00",
         "category_label": "카테고리",
@@ -111,6 +130,22 @@
         "note_placeholder": "설명 입력...",
         "save_btn": "거래 저장",
         "saving": "저장 중...",
+        "save_failed": "거래 저장 실패",
+        "network_error": "네트워크 오류",
+        "permission_error": "권한 오류",
+        "storage_error": "저장소 오류",
+        "invalid_amount": "잘못된 금액",
+        "no_category": "카테고리를 선택하세요",
+        "no_account": "계좌를 선택하세요",
+        "no_target_account": "대상 계좌를 선택하세요",
+        "currency_label": "통화",
+        "target_label": "대상",
+        "to_account_label": "입금 계좌",
+        "select_account": "계좌 선택",
+        "target_currency_label": "대상 통화",
+        "exchange_rate_label": "환율",
+        "target_amount_label": "변환 금액",
+        "edit": "거래 편집",
         "categories": {
             "food": "식비",
             "transport": "교통",
@@ -131,10 +166,6 @@
             "securities": "증권",
             "exchange": "거래소"
         },
-        "transfer": "이체",
-        "to_account_label": "입금 계좌",
-        "exchange_rate_label": "환율",
-        "target_amount_label": "변환 금액",
         "no_transactions": "아직 거래가 없습니다."
     },
     "account_settings": {
@@ -143,6 +174,44 @@
         "account_name": "계좌 이름",
         "account_type": "계좌 유형",
         "initial_balance": "초기 잔액",
-        "edit_account": "계좌 편집"
+        "edit_account": "계좌 편집",
+        "view_mode": "보기 모드",
+        "delete_account": "삭제",
+        "confirm_delete": "이 계좌를 삭제하시겠습니까?",
+        "linked": "연결됨",
+        "linked_account": "연결 계좌",
+        "credit_settings": "신용카드 설정",
+        "statement_day": "결제일",
+        "payment_day": "납부일",
+        "auto_payment_account": "자동 결제 계좌",
+        "fee_settings": "수수료 설정",
+        "fee_discount": "수수료 할인",
+        "fee_discount_desc": "1 = 수수료 100%, 0.5 = 50% 할인",
+        "fee_examples": "수수료 계산 예시",
+        "buy_example": "매수",
+        "sell_example": "매도",
+        "add_category": "카테고리 추가",
+        "category_placeholder": "카테고리 이름 입력",
+        "category_list": "카테고리 목록",
+        "no_categories": "카테고리 없음",
+        "add_first_category": "위에서 첫 카테고리를 추가하세요",
+        "confirm_delete_category": "이 카테고리를 삭제하시겠습니까?",
+        "load_failed": "설정 로드 실패",
+        "image_too_large": "이미지 크기는 2MB를 초과할 수 없습니다",
+        "min_fee": "최소 수수료",
+        "min_fee_desc": "대만 기본값 20",
+        "confirm_delete_currency": "통화를 삭제하시겠습니까?",
+        "auto_topup": "자동 충전",
+        "topup_threshold": "잔액 한도",
+        "topup_amount": "충전 금액",
+        "discount_unit": "배",
+        "fee_formula": "매수 {{buy}}% + 매도 {{sell}}% + 세금 0.3% = 합계 {{total}}%",
+        "min_trade_amount": "최소 거래 금액: {{amount}} (수수료 {{fee}}%)"
+    },
+    "ewallet_settings": {
+        "title": "전자 지갑 설정",
+        "auto_topup": "자동 충전",
+        "topup_threshold": "잔액 한도",
+        "topup_amount": "충전 금액"
     }
 }

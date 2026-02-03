@@ -11,11 +11,8 @@ interface AssetCardProps {
 export const AssetCard: React.FC<AssetCardProps> = ({
     totalAssets,
     currency = 'TWD',
-    dayChange = 0,
-    dayChangePercentage = 0,
 }) => {
     const { t } = useTranslation();
-    const isPositive = dayChange >= 0;
 
     return (
         <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-lg border border-gray-700 relative overflow-hidden">
@@ -28,15 +25,6 @@ export const AssetCard: React.FC<AssetCardProps> = ({
                 {totalAssets < 0 ? '-' : ''}
                 {currency === 'TWD' ? 'NT$' : '$'}
                 {Math.abs(totalAssets).toLocaleString()}
-            </div>
-
-            <div className="flex gap-2 z-10 relative">
-                <div className={`
-          px-3 py-1 rounded-full text-xs font-medium flex items-center
-          ${isPositive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}
-        `}>
-                    {isPositive ? '+' : ''}{dayChange.toLocaleString()} ({isPositive ? '+' : ''}{dayChangePercentage.toFixed(2)}%)
-                </div>
             </div>
         </div>
     );
