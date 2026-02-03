@@ -21,6 +21,8 @@ import { AccountsScreen } from './pages/AccountsScreen'; // Import
 import { AccountSettings } from './components/settings/AccountSettings'; // Import
 import { CurrencySettings } from './components/settings/CurrencySettings'; // Import
 import { AccountBalanceCard } from './components/dashboard/AccountBalanceCard'; // Import
+import underDevelopmentData from './data/UnderDevelopment.json'; // Import under development data
+import { UnderDevelopmentAlert } from './components/ui/UnderDevelopmentAlert'; // Import custom alert
 import './index.css';
 
 const Dashboard = () => {
@@ -42,6 +44,7 @@ const Dashboard = () => {
   const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<any>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [showUnderDevelopmentAlert, setShowUnderDevelopmentAlert] = useState(false);
 
   // 初始化語言服務
   useEffect(() => {
@@ -69,6 +72,11 @@ const Dashboard = () => {
   }, [isAuthenticated, loading]);
 
   const handleTabChange = (id: string) => {
+    // 檢查是否為開發中的模組
+    if (underDevelopmentData.modules[id as keyof typeof underDevelopmentData.modules]) {
+      setShowUnderDevelopmentAlert(true);
+      return;
+    }
     setActiveTab(id);
   };
 
@@ -321,6 +329,11 @@ const Dashboard = () => {
         onClose={() => setShowTransactionModal(false)}
         initialData={editingTransaction}
         onSuccess={handleSuccess}
+      />
+
+      <UnderDevelopmentAlert
+        isOpen={showUnderDevelopmentAlert}
+        onClose={() => setShowUnderDevelopmentAlert(false)}
       />
     </MobileLayout>
   );

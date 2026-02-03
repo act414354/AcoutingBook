@@ -1,16 +1,25 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSimpleAuth } from '../../context/SimpleAuthContext';
+import underDevelopmentData from '../../data/UnderDevelopment.json';
+import { UnderDevelopmentAlert } from '../ui/UnderDevelopmentAlert';
 
 export const ModuleSettings: React.FC = () => {
     const { t } = useTranslation();
     const { settings, updateSettings } = useSimpleAuth();
     const [savingModule, setSavingModule] = useState<string | null>(null);
     const [errorModule, setErrorModule] = useState<string | null>(null);
+    const [showUnderDevelopmentAlert, setShowUnderDevelopmentAlert] = useState(false);
 
     if (!settings) return null;
 
     const toggleModule = async (moduleKey: keyof typeof settings.modules) => {
+        // 檢查是否為開發中的模組
+        if (underDevelopmentData.modules[moduleKey as keyof typeof underDevelopmentData.modules]) {
+            setShowUnderDevelopmentAlert(true);
+            return;
+        }
+
         // 立即顯示切換效果（樂觀更新）
         const originalState = settings.modules[moduleKey];
         const newModules = {
@@ -79,50 +88,64 @@ export const ModuleSettings: React.FC = () => {
             <h3 className="text-gray-300 font-semibold mb-4">{t('settings.modules', 'Modules (Beta)')}</h3>
 
             <div className="space-y-4">
-                {modules.map((mod) => (
-                    <div key={mod.id} className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className={`p-2 bg-${mod.color}-500/10 rounded-lg text-${mod.color}-400`}>
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={mod.iconPath} />
-                                </svg>
+                {modules.map((mod) => {
+                    const isUnderDevelopment = underDevelopmentData.modules[mod.id as keyof typeof underDevelopmentData.modules];
+                    
+                    return (
+                        <div key={mod.id} className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2 bg-${mod.color}-500/10 rounded-lg text-${mod.color}-400`}>
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={mod.iconPath} />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div className="text-white text-sm font-medium flex items-center gap-2">
+                                        {mod.label}
+                                        {isUnderDevelopment && (
+                                            <span className="px-2 py-0.5 bg-yellow-500/10 text-yellow-400 text-[10px] rounded-full border border-yellow-500/20">
+                                                開發中
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="text-gray-500 text-xs">{mod.desc}</div>
+                                </div>
                             </div>
-                            <div>
-                                <div className="text-white text-sm font-medium">{mod.label}</div>
-                                <div className="text-gray-500 text-xs">{mod.desc}</div>
+                            <div className="flex items-center gap-2">
+                                {errorModule === mod.id && (
+                                    <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse" title="保存失敗" />
+                                )}
+                                <button
+                                    // @ts-ignore
+                                    onClick={() => toggleModule(mod.id)}
+                                    // @ts-ignore
+                                    className={`w-12 h-6 rounded-full transition-colors duration-300 relative ${
+                                        isUnderDevelopment 
+                                            ? 'bg-gray-600 cursor-not-allowed opacity-50'
+                                            : savingModule === mod.id 
+                                                ? (settings.modules[mod.id] 
+                                                    ? 'bg-blue-500/50'
+                                                    : 'bg-gray-500/50')
+                                                : (errorModule === mod.id 
+                                                    ? 'bg-red-500'
+                                                    : (settings.modules[mod.id] 
+                                                        ? 'bg-blue-500' 
+                                                        : 'bg-gray-600'))
+                                    }`}
+                                    disabled={savingModule !== null || isUnderDevelopment}
+                                    title={isUnderDevelopment ? '功能尚未開發, 需使用請聯繫開發者' : undefined}
+                                >
+                                    {/* @ts-ignore */}
+                                    <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 ${
+                                        settings.modules[mod.id] ? 'translate-x-6' : ''
+                                    } ${
+                                        errorModule === mod.id ? 'animate-pulse' : ''
+                                    }`} />
+                                </button>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            {errorModule === mod.id && (
-                                <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse" title="保存失敗" />
-                            )}
-                            <button
-                                // @ts-ignore
-                                onClick={() => toggleModule(mod.id)}
-                                // @ts-ignore
-                                className={`w-12 h-6 rounded-full transition-colors duration-300 relative ${
-                                    savingModule === mod.id 
-                                        ? (settings.modules[mod.id] 
-                                            ? 'bg-blue-500/50'
-                                            : 'bg-gray-500/50')
-                                        : (errorModule === mod.id 
-                                            ? 'bg-red-500'
-                                            : (settings.modules[mod.id] 
-                                                ? 'bg-blue-500' 
-                                                : 'bg-gray-600'))
-                                }`}
-                                disabled={savingModule !== null}
-                            >
-                                {/* @ts-ignore */}
-                                <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 ${
-                                    settings.modules[mod.id] ? 'translate-x-6' : ''
-                                } ${
-                                    errorModule === mod.id ? 'animate-pulse' : ''
-                                }`} />
-                            </button>
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
             
             {/* 錯誤提示 */}
@@ -136,6 +159,11 @@ export const ModuleSettings: React.FC = () => {
                     </div>
                 </div>
             )}
+            
+            <UnderDevelopmentAlert
+                isOpen={showUnderDevelopmentAlert}
+                onClose={() => setShowUnderDevelopmentAlert(false)}
+            />
         </div>
     );
 };

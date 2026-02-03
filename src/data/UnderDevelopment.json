@@ -1,0 +1,16 @@
+{
+    "modules": {
+        "budget": false,
+        "splitwise": true,
+        "invest": true,
+        "family": true,
+        "fund": true,
+        "futures": true,
+        "tw_stock": true,
+        "us_stock": true,
+        "crypto": true,
+        "metal": true,
+        "real_estate": true,
+        "exchange_rate": true
+    }
+}
