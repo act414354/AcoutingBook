@@ -1,0 +1,18 @@
+{
+  "early_access_users": {
+    "user@example.com": {
+      "enabled_modules": ["budget", "invest"],
+      "granted_at": "2026-02-03T18:22:00Z",
+      "granted_by": "admin"
+    },
+    "test@demo.com": {
+      "enabled_modules": ["splitwise", "crypto"],
+      "granted_at": "2026-02-03T18:22:00Z", 
+      "granted_by": "admin"
+    }
+  },
+  "admin_users": [
+    "admin@quickbook.com"
+  ],
+  "last_updated": "2026-02-03T18:22:00Z"
+}
