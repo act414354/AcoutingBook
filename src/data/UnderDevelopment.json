@@ -1,6 +1,6 @@
 {
     "modules": {
-        "budget": false,
+        "budget": true,
         "splitwise": true,
         "invest": true,
         "family": true,
