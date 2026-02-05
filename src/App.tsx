@@ -57,7 +57,14 @@ const Dashboard = () => {
     };
 
     initializeLanguage();
-  }, [isAuthenticated]); // 當認證狀態改變時重新初始化
+  }, [isAuthenticated]);
+
+  // 監聽導航變化，關閉所有模態框
+  useEffect(() => {
+    setShowTransactionModal(false);
+    setEditingTransaction(null);
+    setShowUnderDevelopmentAlert(false);
+  }, [activeTab]); // 當認證狀態改變時重新初始化
 
   // 登入後自動顯示記錄頁面並開啟交易模態框
   useEffect(() => {
@@ -77,6 +84,7 @@ const Dashboard = () => {
       setShowUnderDevelopmentAlert(true);
       return;
     }
+    
     setActiveTab(id);
   };
 
