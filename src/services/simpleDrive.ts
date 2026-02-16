@@ -13,6 +13,97 @@ const GOOGLE_CONFIG = {
     DATA_FILE_NAME: "accounting_data.json"
 };
 
+// 權杖管理相關介面
+interface TokenInfo {
+    access_token: string;
+    expires_at: number;
+    scope: string;
+    token_type: string;
+}
+
+// 權杖過期檢查和自動刷新
+class TokenManager {
+    private static readonly TOKEN_KEY = 'quickbook_google_token';
+    private static readonly EXPIRY_BUFFER = 5 * 60 * 1000; // 5分鐘緩衝時間
+
+    // 儲存權杖
+    static saveToken(token: any): void {
+        const tokenInfo: TokenInfo = {
+            access_token: token.access_token,
+            expires_at: Date.now() + (token.expires_in * 1000),
+            scope: token.scope,
+            token_type: token.token_type
+        };
+        localStorage.setItem(this.TOKEN_KEY, JSON.stringify(tokenInfo));
+        console.log('💾 權杖已儲存，過期時間:', new Date(tokenInfo.expires_at));
+    }
+
+    // 獲取權杖
+    static getToken(): TokenInfo | null {
+        try {
+            const tokenStr = localStorage.getItem(this.TOKEN_KEY);
+            if (!tokenStr) return null;
+            
+            const token = JSON.parse(tokenStr);
+            
+            // 檢查是否過期
+            if (this.isTokenExpired(token)) {
+                console.log('⏰ 權杖已過期，清除權杖');
+                this.clearToken();
+                return null;
+            }
+            
+            return token;
+        } catch (error) {
+            console.error('❌ 讀取權杖失敗:', error);
+            this.clearToken();
+            return null;
+        }
+    }
+
+    // 檢查權杖是否過期
+    static isTokenExpired(token: TokenInfo): boolean {
+        return Date.now() >= (token.expires_at - this.EXPIRY_BUFFER);
+    }
+
+    // 清除權杖
+    static clearToken(): void {
+        localStorage.removeItem(this.TOKEN_KEY);
+    }
+
+    // 設定權杖到 gapi
+    static setTokenToGapi(token: TokenInfo): void {
+        // @ts-ignore
+        gapi.client.setToken({
+            access_token: token.access_token,
+            expires_in: Math.floor((token.expires_at - Date.now()) / 1000),
+            scope: token.scope,
+            token_type: token.token_type
+        });
+    }
+
+    // 包裝 API 呼叫，自動處理權杖過期
+    static async makeApiCall<T>(apiCall: () => Promise<T>): Promise<T> {
+        try {
+            return await apiCall();
+        } catch (error: any) {
+            // 檢查是否為權杖過期錯誤
+            if (error.status === 401 || error.message?.includes('Invalid Credentials')) {
+                console.log('🔄 檢測到權杖過期，嘗試重新認證...');
+                
+                // 清除過期權杖
+                this.clearToken();
+                
+                // 觸發重新登入流程
+                throw new Error('AUTH_EXPIRED');
+            }
+            
+            // 其他錯誤直接拋出
+            throw error;
+        }
+    }
+}
+
 export interface UserData {
     id: string;
     name: string;
@@ -102,7 +193,13 @@ class SimpleDriveService {
         // 1. 等待 GIS (google.accounts) 載入
         await this.waitForGoogleIdentityServices();
 
-        // 2. 載入 GAPI Client
+        // 2. 檢查是否有已儲存的權杖
+        const savedToken = TokenManager.getToken();
+        if (savedToken) {
+            console.log('🔄 使用已儲存的權杖');
+        }
+
+        // 3. 載入 GAPI Client
         return new Promise((resolve, reject) => {
             gapi.load('client', async () => {
                 try {
@@ -110,6 +207,27 @@ class SimpleDriveService {
                         apiKey: GOOGLE_CONFIG.API_KEY,
                         discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
                     });
+
+                    // 如果有已儲存的權杖，設定到 gapi
+                    if (savedToken) {
+                        TokenManager.setTokenToGapi(savedToken);
+                        
+                        // 獲取用戶資訊
+                        try {
+                            const userInfo = await this.fetchUserInfo(savedToken.access_token);
+                            this.userData = userInfo;
+                            
+                            // 嘗試同步最新的區塊
+                            try {
+                                await this.syncLatestBlock();
+                            } catch (driveErr) {
+                                console.warn("Sync failed:", driveErr);
+                            }
+                        } catch (userErr) {
+                            console.warn("Failed to fetch user info:", userErr);
+                        }
+                    }
+
                     this.isInitialized = true;
                     resolve();
                 } catch (error) {
@@ -166,9 +284,12 @@ class SimpleDriveService {
                         }
 
                         try {
+                            // 儲存權杖到 TokenManager
+                            TokenManager.saveToken(tokenResponse);
+                            console.log('💾 新權杖已儲存');
+
                             // 將 Token 設定給 gapi
-                            // @ts-ignore
-                            gapi.client.setToken(tokenResponse);
+                            TokenManager.setTokenToGapi(TokenManager.getToken()!);
 
                             // 獲取使用者資訊 (需透過 API 呼叫，因為 GIS 不直接回傳 Profile)
                             const userInfo = await this.fetchUserInfo(tokenResponse.access_token);
@@ -202,21 +323,26 @@ class SimpleDriveService {
 
     // 使用 Access Token 獲取用戶資訊
     private async fetchUserInfo(accessToken: string): Promise<UserData> {
-        const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-            headers: { Authorization: `Bearer ${accessToken}` },
+        return await TokenManager.makeApiCall(async () => {
+            const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: `Bearer ${accessToken}` },
+            });
+            const data = await response.json();
+            return {
+                id: data.sub,
+                name: data.name,
+                email: data.email,
+                imageUrl: data.picture,
+            };
         });
-        const data = await response.json();
-        return {
-            id: data.sub,
-            name: data.name,
-            email: data.email,
-            imageUrl: data.picture,
-        };
     }
 
     // 登出
     async signOut(): Promise<void> {
         if (this.isInitialized) {
+            // 清除權杖
+            TokenManager.clearToken();
+            
             // @ts-ignore
             const token = gapi.client.getToken();
             if (token !== null) {
@@ -231,6 +357,8 @@ class SimpleDriveService {
         this.isGuestMode = false;
         this.latestBlock = null;
         this.mockChainCache.clear();
+        
+        console.log('🚪 用戶已登出，權杖已清除');
     }
 
     // 檢查是否已登入
@@ -718,13 +846,15 @@ class SimpleDriveService {
             close_delim;
 
         try {
-            const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': `multipart/related; boundary="${boundary}"`
-                },
-                body: multipartRequestBody
+            const response = await TokenManager.makeApiCall(async () => {
+                return await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': `multipart/related; boundary="${boundary}"`
+                    },
+                    body: multipartRequestBody
+                });
             });
 
             if (!response.ok) {
@@ -743,17 +873,19 @@ class SimpleDriveService {
 
     // 搜尋現有的資料檔案 - 在 Google Drive 根目錄
     private async searchDataFileInRoot(): Promise<gapi.client.drive.File[]> {
-        // 直接在根目錄搜尋資料檔案
-        const query = `name='${GOOGLE_CONFIG.DATA_FILE_NAME}' and trashed=false`;
-        const response = await gapi.client.drive.files.list({
-            q: query,
-            fields: 'files(id, name, createdTime, modifiedTime)'
+        return await TokenManager.makeApiCall(async () => {
+            // 直接在根目錄搜尋資料檔案
+            const query = `name='${GOOGLE_CONFIG.DATA_FILE_NAME}' and trashed=false`;
+            const response = await gapi.client.drive.files.list({
+                q: query,
+                fields: 'files(id, name, createdTime, modifiedTime)'
+            });
+            const files = response.result.files || [];
+            if (files.length > 0) {
+                console.log("Found existing data file:", files[0].name);
+            }
+            return files;
         });
-        const files = response.result.files || [];
-        if (files.length > 0) {
-            console.log("Found existing data file:", files[0].name);
-        }
-        return files;
     }
 
     // -------------------------------------------------------------
@@ -823,3 +955,4 @@ class SimpleDriveService {
 }
 
 export const simpleDriveService = new SimpleDriveService();
+export { TokenManager };

@@ -1,5 +1,5 @@
 import { gapi } from 'gapi-script';
-import { simpleDriveService } from './simpleDrive';
+import { simpleDriveService, TokenManager } from './simpleDrive';
 
 // 區塊鏈交易格式接口
 export interface BlockchainTransaction {
@@ -32,7 +32,7 @@ export interface BlockHeader {
         rates: Record<string, number>;
         source: string;
     };
-    balances_snapshot: Record<string, { amount: number; currency: string }>;
+    balances_snapshot: Record<string, Record<string, number>>; // 帳戶ID -> { 幣種: 金額 }
 }
 
 export interface BlockData {
@@ -112,25 +112,14 @@ class BlockchainTransactionService {
         const snapshot = simpleDriveService.getCurrentSnapshot();
         const balances: BlockHeader['balances_snapshot'] = {};
         
-        // 獲取所有帳戶設置
-        const settings = await simpleDriveService.getSettings();
-        const allAccounts = settings.accounts || [];
-        
-        // 轉換快照格式 - 包含所有帳戶（包括餘額為0的）
-        Object.entries(snapshot.accounts).forEach(([accountId, currencies]) => {
+        // 使用帳戶ID作為 key，幣種物件作為 value
+        Object.entries(snapshot.accounts).forEach(([accountId, currencies]: [string, any]) => {
+            balances[accountId] = {};
             Object.entries(currencies).forEach(([currency, amount]) => {
-                // 包含所有餘額，包括0
-                balances[accountId] = { amount, currency };
+                balances[accountId][currency] = Number(amount);
             });
         });
         
-        // 確保所有設置中的帳戶都被包含（即使餘額為0）
-        allAccounts.forEach((account: any) => {
-            if (!balances[account.id] && !account.deleted) {
-                balances[account.id] = { amount: 0, currency: account.currency || 'TWD' };
-            }
-        });
-
         return balances;
     }
 
@@ -317,9 +306,11 @@ class BlockchainTransactionService {
         try {
             // 搜尋 QuickBook Data 資料夾
             const query = "name='QuickBook Data' and mimeType='application/vnd.google-apps.folder' and trashed=false";
-            const response = await gapi.client.drive.files.list({
-                q: query,
-                fields: 'files(id, name)'
+            const response = await TokenManager.makeApiCall(async () => {
+                return await gapi.client.drive.files.list({
+                    q: query,
+                    fields: 'files(id, name)'
+                });
             });
 
             const folders = response.result.files || [];
@@ -331,12 +322,14 @@ class BlockchainTransactionService {
 
             // 創建 QuickBook Data 資料夾
             console.log('📁 創建 QuickBook Data 資料夾...');
-            const createResponse = await gapi.client.drive.files.create({
-                resource: {
-                    name: 'QuickBook Data',
-                    mimeType: 'application/vnd.google-apps.folder'
-                },
-                fields: 'id'
+            const createResponse = await TokenManager.makeApiCall(async () => {
+                return await gapi.client.drive.files.create({
+                    resource: {
+                        name: 'QuickBook Data',
+                        mimeType: 'application/vnd.google-apps.folder'
+                    },
+                    fields: 'id'
+                });
             });
 
             const folderId = createResponse.result.id || '';
@@ -351,11 +344,13 @@ class BlockchainTransactionService {
     // 重命名檔案
     private async renameFile(fileId: string, newName: string): Promise<void> {
         try {
-            await gapi.client.drive.files.update({
-                fileId: fileId,
-                resource: {
-                    name: newName
-                }
+            await TokenManager.makeApiCall(async () => {
+                return await gapi.client.drive.files.update({
+                    fileId: fileId,
+                    resource: {
+                        name: newName
+                    }
+                });
             });
         } catch (error) {
             console.error('❌ 重命名檔案失敗:', error);
@@ -374,9 +369,11 @@ class BlockchainTransactionService {
         try {
             // 步驟1: 首先搜尋新格式的檔案
             const newFormatQuery = `name='${fileName}' and '${folderId}' in parents and trashed=false`;
-            const response = await gapi.client.drive.files.list({
-                q: newFormatQuery,
-                fields: 'files(id, name, createdTime, modifiedTime)'
+            const response = await TokenManager.makeApiCall(async () => {
+                return await gapi.client.drive.files.list({
+                    q: newFormatQuery,
+                    fields: 'files(id, name, createdTime, modifiedTime)'
+                });
             });
 
             const files = response.result.files || [];
@@ -389,9 +386,11 @@ class BlockchainTransactionService {
                 console.log(`📁 檔案ID: ${fileId}, 創建時間: ${fileInfo.createdTime}, 修改時間: ${fileInfo.modifiedTime}`);
                 console.log(`🎯 同一天的交易將添加到現有檔案中，不會創建新檔案`);
                 
-                const contentResponse = await gapi.client.drive.files.get({
-                    fileId: fileId,
-                    alt: 'media'
+                const contentResponse = await TokenManager.makeApiCall(async () => {
+                    return await gapi.client.drive.files.get({
+                        fileId: fileId,
+                        alt: 'media'
+                    });
                 });
                 
                 const existingData = contentResponse.result as BlockData;
@@ -406,9 +405,11 @@ class BlockchainTransactionService {
             const oldFileName = `${date}_${cleanAccountName}.json`; // 舊格式: YYYY-MM-DD_Username.json
             
             const oldFormatQuery = `name='${oldFileName}' and '${folderId}' in parents and trashed=false`;
-            const oldResponse = await gapi.client.drive.files.list({
-                q: oldFormatQuery,
-                fields: 'files(id, name, createdTime, modifiedTime)'
+            const oldResponse = await TokenManager.makeApiCall(async () => {
+                return await gapi.client.drive.files.list({
+                    q: oldFormatQuery,
+                    fields: 'files(id, name, createdTime, modifiedTime)'
+                });
             });
 
             const oldFiles = oldResponse.result.files || [];
@@ -421,9 +422,11 @@ class BlockchainTransactionService {
                 console.log(`📁 檔案ID: ${fileId}, 創建時間: ${fileInfo.createdTime}, 修改時間: ${fileInfo.modifiedTime}`);
                 console.log(`🔄 將讀取舊檔案並使用新格式保存`);
                 
-                const contentResponse = await gapi.client.drive.files.get({
-                    fileId: fileId,
-                    alt: 'media'
+                const contentResponse = await TokenManager.makeApiCall(async () => {
+                    return await gapi.client.drive.files.get({
+                        fileId: fileId,
+                        alt: 'media'
+                    });
                 });
                 
                 const existingData = contentResponse.result as BlockData;
@@ -588,7 +591,8 @@ class BlockchainTransactionService {
             
             // 檢查是否已登入
             if (!simpleDriveService.isSignedIn()) {
-                throw new Error('用戶未登入，無法保存到 Google Drive');
+                console.log('🔒 用戶未登入，跳過保存到 Google Drive');
+                return ''; // 返回空字符串，符合方法返回類型
             }
 
             // 步驟1: 檢查或創建每日交易檔案
@@ -624,22 +628,12 @@ class BlockchainTransactionService {
             const currentSnapshot = simpleDriveService.getCurrentSnapshot();
             const balances: BlockHeader['balances_snapshot'] = {};
             
-            // 獲取所有帳戶設置
-            const settings = await simpleDriveService.getSettings();
-            const allAccounts = settings.accounts || [];
-            
-            // 從當前快照轉換
-            Object.entries(currentSnapshot.accounts).forEach(([accountId, currencies]) => {
+            // 使用帳戶ID作為 key，幣種物件作為 value
+            Object.entries(currentSnapshot.accounts).forEach(([accountId, currencies]: [string, any]) => {
+                balances[accountId] = {};
                 Object.entries(currencies).forEach(([currency, amount]) => {
-                    balances[accountId] = { amount, currency };
+                    balances[accountId][currency] = Number(amount);
                 });
-            });
-            
-            // 確保所有設置中的帳戶都被包含
-            allAccounts.forEach((account: any) => {
-                if (!balances[account.id] && !account.deleted) {
-                    balances[account.id] = { amount: 0, currency: 'TWD' };
-                }
             });
             
             existingBlockData.block_header.balances_snapshot = balances;
@@ -752,24 +746,37 @@ class BlockchainTransactionService {
         }
     }
     
-    // 計算交易快照
+    // 計算交易快照 - 優化版本：只處理必要的幣種
     private async calculateSnapshotFromTransactions(transactions: BlockchainTransaction[]): Promise<any> {
         const snapshot: any = { totalAssets: {}, accounts: {} };
         
-        // 先獲取所有帳戶設置，確保所有帳戶都顯示在快照中
-        const settings = await simpleDriveService.getSettings();
-        const allAccounts = settings.accounts || [];
+        // 收集所有實際使用的幣種
+        const usedCurrencies = new Set<string>();
+        const usedAccounts = new Set<string>();
         
-        // 初始化所有帳戶的快照
-        allAccounts.forEach((account: any) => {
-            if (!account.deleted) {
-                snapshot.accounts[account.id] = {
-                    TWD: 0, // 預設 TWD 餘額為 0
-                    USD: 0, // 預設 USD 餘額為 0
-                    JPY: 0, // 預設 JPY 餘額為 0
-                    EUR: 0  // 預設 EUR 餘額為 0
-                };
+        // 第一遍：收集使用的幣種和帳戶
+        transactions.forEach(tx => {
+            if (tx.debit) {
+                usedCurrencies.add(tx.debit.currency);
+                usedAccounts.add(tx.debit.account);
             }
+            if (tx.credit) {
+                usedCurrencies.add(tx.credit.currency);
+                usedAccounts.add(tx.credit.account);
+            }
+        });
+        
+        // 只初始化使用的帳戶和幣種
+        usedAccounts.forEach(accountId => {
+            snapshot.accounts[accountId] = {};
+            usedCurrencies.forEach(currency => {
+                snapshot.accounts[accountId][currency] = 0;
+            });
+        });
+        
+        // 初始化總資產
+        usedCurrencies.forEach(currency => {
+            snapshot.totalAssets[currency] = 0;
         });
         
         // 按流水號排序處理交易
@@ -786,9 +793,6 @@ class BlockchainTransactionService {
                 const currency = tx.debit.currency;
                 const amount = tx.debit.amount;
                 
-                if (!snapshot.accounts[accountId]) {
-                    snapshot.accounts[accountId] = {};
-                }
                 snapshot.accounts[accountId][currency] = (snapshot.accounts[accountId][currency] || 0) - amount;
                 snapshot.totalAssets[currency] = (snapshot.totalAssets[currency] || 0) - amount;
             }
@@ -798,9 +802,6 @@ class BlockchainTransactionService {
                 const currency = tx.credit.currency;
                 const amount = tx.credit.amount;
                 
-                if (!snapshot.accounts[accountId]) {
-                    snapshot.accounts[accountId] = {};
-                }
                 snapshot.accounts[accountId][currency] = (snapshot.accounts[accountId][currency] || 0) + amount;
                 snapshot.totalAssets[currency] = (snapshot.totalAssets[currency] || 0) + amount;
             }
@@ -814,29 +815,15 @@ class BlockchainTransactionService {
         const newSnapshot = JSON.parse(JSON.stringify(currentSnapshot));
         const currency = options?.currency || 'TWD';
         
-        // 確保所有帳戶都存在於快照中
-        const settings = await simpleDriveService.getSettings();
-        const allAccounts = settings.accounts || [];
-        
-        allAccounts.forEach((account: any) => {
-            if (!account.deleted && !newSnapshot.accounts[account.id]) {
-                newSnapshot.accounts[account.id] = {
-                    TWD: 0,
-                    USD: 0,
-                    JPY: 0,
-                    EUR: 0
-                };
-            }
-        });
-        
-        // 確保目標帳戶存在
+        // 確保相關帳戶存在（只處理涉及的帳戶）
         if (!newSnapshot.accounts[accountId]) {
-            newSnapshot.accounts[accountId] = {
-                TWD: 0,
-                USD: 0,
-                JPY: 0,
-                EUR: 0
-            };
+            newSnapshot.accounts[accountId] = {};
+        }
+        if (!newSnapshot.accounts[accountId][currency]) {
+            newSnapshot.accounts[accountId][currency] = 0;
+        }
+        if (!newSnapshot.totalAssets[currency]) {
+            newSnapshot.totalAssets[currency] = 0;
         }
         
         if (type === 'income') {
@@ -853,35 +840,58 @@ class BlockchainTransactionService {
                 
                 // 確保目標帳戶存在
                 if (!newSnapshot.accounts[toAccountId]) {
-                    newSnapshot.accounts[toAccountId] = {
-                        TWD: 0,
-                        USD: 0,
-                        JPY: 0,
-                        EUR: 0
-                    };
+                    newSnapshot.accounts[toAccountId] = {};
+                }
+                if (!newSnapshot.accounts[toAccountId][targetCurrency]) {
+                    newSnapshot.accounts[toAccountId][targetCurrency] = 0;
+                }
+                if (!newSnapshot.totalAssets[targetCurrency]) {
+                    newSnapshot.totalAssets[targetCurrency] = 0;
                 }
                 
-                newSnapshot.accounts[accountId][currency] = (newSnapshot.accounts[accountId][currency] || 0) - amount;
-                newSnapshot.totalAssets[currency] = (newSnapshot.totalAssets[currency] || 0) - amount;
+                // 更新轉帳
+                newSnapshot.accounts[accountId][currency] -= amount;
+                newSnapshot.totalAssets[currency] -= amount;
+                newSnapshot.accounts[toAccountId][targetCurrency] += targetAmount;
+                newSnapshot.totalAssets[targetCurrency] += targetAmount;
+            }
+        } else if (type === 'exchange') {
+            const toAccountId = options?.toAccountId;
+            if (toAccountId) {
+                const targetCurrency = options?.targetCurrency || currency;
+                const targetAmount = options?.targetAmount || amount;
                 
-                newSnapshot.accounts[toAccountId][targetCurrency] = (newSnapshot.accounts[toAccountId][targetCurrency] || 0) + targetAmount;
-                newSnapshot.totalAssets[targetCurrency] = (newSnapshot.totalAssets[targetCurrency] || 0) + targetAmount;
+                // 確保目標帳戶存在
+                if (!newSnapshot.accounts[toAccountId]) {
+                    newSnapshot.accounts[toAccountId] = {};
+                }
+                if (!newSnapshot.accounts[toAccountId][targetCurrency]) {
+                    newSnapshot.accounts[toAccountId][targetCurrency] = 0;
+                }
+                if (!newSnapshot.totalAssets[targetCurrency]) {
+                    newSnapshot.totalAssets[targetCurrency] = 0;
+                }
+                
+                // 更新兌換（同一帳戶內的幣種轉換）
+                newSnapshot.accounts[accountId][currency] -= amount;
+                newSnapshot.totalAssets[currency] -= amount;
+                newSnapshot.accounts[accountId][targetCurrency] += targetAmount;
+                newSnapshot.totalAssets[targetCurrency] += targetAmount;
             }
         }
         
         return newSnapshot;
     }
     
-    // 轉換快照為區塊格式
+    // 轉換快照為區塊格式 - 帳戶分組格式：{ 帳戶ID: { 幣種: 金額 } }
     private convertSnapshotToBlockFormat(snapshot: any): BlockHeader['balances_snapshot'] {
         const balances: BlockHeader['balances_snapshot'] = {};
         
+        // 使用帳戶ID作為 key，幣種物件作為 value
         Object.entries(snapshot.accounts).forEach(([accountId, currencies]: [string, any]) => {
-            // 每個帳戶的每種貨幣都要記錄
+            balances[accountId] = {};
             Object.entries(currencies).forEach(([currency, amount]) => {
-                // 使用 accountId_currency 作為 key 來區分不同貨幣
-                const key = `${accountId}_${currency}`;
-                balances[key] = { amount, currency };
+                balances[accountId][currency] = Number(amount);
             });
         });
         

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { simpleDriveService } from '../../services/simpleDrive';
 import { blockchainTransactionService } from '../../services/blockchainTransactionService';
@@ -24,112 +24,184 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, o
     
     // Smart Input
     const [smartInput, setSmartInput] = useState(''); // 智慧輸入框
+    const parseTimeoutRef = useRef<number | null>(null); // 防抖定時器
 
-    // 智慧解析函數
-    const parseSmartInput = (input: string) => {
+    // 智慧解析函數 - 重新設計邏輯：拆分文字與數字
+    const parseSmartInput = (input: string, isRealTime: boolean = true) => {
         if (!input.trim()) return;
 
-        // 定義分類關鍵字映射
+        // 定義分類關鍵字映射 - 支援中文和拼音
         const categoryKeywords: { [key: string]: string } = {
-            // 餐飲
+            // 餐飲 - 中文
             '晚餐': '餐飲', '午餐': '餐飲', '早餐': '餐飲', '消夜': '餐飲', '飯': '餐飲', '麵': '餐飲', '便當': '餐飲',
             '咖啡': '餐飲', '奶茶': '餐飲', '飲料': '餐飲', '酒': '餐飲', '聚餐': '餐飲',
-            // 交通
+            // 餐飲 - 拼音
+            'wancan': '餐飲', 'wucan': '餐飲', 'zaocan': '餐飲', 'xiaoye': '餐飲', 'fan': '餐飲', 'mian': '餐飲',
+            'biancan': '餐飲', 'kafei': '餐飲', 'naicha': '餐飲', 'yinliao': '餐飲', 'jiucan': '餐飲',
+            
+            // 交通 - 中文
             '捷運': '交通', '公車': '交通', '計程車': '交通', '油錢': '交通', '停車': '交通', '車資': '交通',
             '火車': '交通', '高鐵': '交通', '機票': '交通',
-            // 購物
+            // 交通 - 拼音
+            'jieyun': '交通', 'gongche': '交通', 'jichengche': '交通', 'youqian': '交通', 'tingche': '交通',
+            'chezi': '交通', 'huoche': '交通', 'gaotie': '交通', 'jipiao': '交通',
+            
+            // 購物 - 中文
             '衣服': '購物', '鞋子': '購物', '包包': '購物', '化妝品': '購物', '日用品': '購物',
             '超市': '購物', '便利商店': '購物', '百貨': '購物', '網購': '購物',
-            // 娛樂
+            // 購物 - 拼音
+            'yifu': '購物', 'xiezi': '購物', 'baobao': '購物', 'huazhuangpin': '購物', 'riyongpin': '購物',
+            'chaoshi': '購物', 'bianlidian': '購物', 'baihuo': '購物', 'wanggou': '購物',
+            
+            // 娛樂 - 中文
             '電影': '娛樂', '遊戲': '娛樂', 'KTV': '娛樂', '演唱會': '娛樂', '運動': '娛樂',
             '書': '娛樂', '音樂': '娛樂',
-            // 住房
+            // 娛樂 - 拼音
+            'dianying': '娛樂', 'youxi': '娛樂', 'yundong': '娛樂', 'shu': '娛樂', 'yinyue': '娛樂',
+            
+            // 住房 - 中文
             '房租': '住房', '水電費': '住房', '瓦斯': '住房', '網路': '住房', '管理費': '住房',
-            // 醫療
+            // 住房 - 拼音
+            'fangzu': '住房', 'shuidianfei': '住房', 'wasi': '住房', 'wanglu': '住房', 'guanlifei': '住房',
+            
+            // 醫療 - 中文
             '看醫生': '醫療', '藥': '醫療', '醫院': '醫療', '保險': '醫療',
-            // 教育
+            // 醫療 - 拼音
+            'kanyisheng': '醫療', 'yao': '醫療', 'yiyuan': '醫療', 'baoxian': '醫療',
+            
+            // 教育 - 中文
             '學費': '教育', '書籍': '教育', '課程': '教育', '補習': '教育',
-            // 薪資
+            // 教育 - 拼音
+            'xuefei': '教育', 'shuji': '教育', 'kecheng': '教育', 'buxi': '教育',
+            
+            // 薪資 - 中文
             '薪水': '薪資', '工資': '薪資', '獎金': '薪資', '兼職': '薪資',
+            // 薪資 - 拼音
+            'xinzi': '薪資', 'gongzi': '薪資', 'jiangjin': '薪資', 'jianzhi': '薪資',
+            
             // 其他
-            '紅包': '其他收入', '禮金': '其他收入', '投資': '投資收益'
+            '紅包': '其他收入', '禮金': '其他收入', '投資': '投資收益',
+            'hongbao': '其他收入', 'lijin': '其他收入', 'touzi': '投資收益'
         };
 
-        // 提取金額 - 支持多種格式
+        // 步驟1：拆分文字與數字 - 支援金額在任意位置
         const amountPatterns = [
             /(\d+(?:\.\d+)?)\s*元/,
             /(\d+(?:\.\d+)?)\s*塊/,
             /(\d+(?:\.\d+)?)\s*$/m,
-            /\$\s*(\d+(?:\.\d+)?)/
+            /\$\s*(\d+(?:\.\d+)?)/,
+            /(\d+(?:\.\d+)?)/  // 匹配任何位置的數字
         ];
 
         let extractedAmount = '';
+        let textPart = input;
+
+        // 提取金額並從文字中移除
         for (const pattern of amountPatterns) {
             const match = input.match(pattern);
             if (match) {
                 extractedAmount = match[1];
+                // 使用更精確的替換，只移除匹配到的金額部分
+                textPart = input.replace(match[0], '').trim();
                 break;
             }
         }
 
-        // 提取分類
+        // 清理文字部分，移除多餘的空格
+        textPart = textPart.replace(/\s+/g, ' ').trim();
+
+        // 步驟2：設置金額
+        if (extractedAmount) {
+            setAmount(extractedAmount);
+        }
+
+        // 步驟3：設置備註（文字部分）
+        if (textPart) {
+            setNote(textPart);
+        }
+
+        // 步驟4：從備註判斷分類
         let extractedCategory = '';
         for (const [keyword, category] of Object.entries(categoryKeywords)) {
-            if (input.includes(keyword)) {
+            if (textPart.includes(keyword)) {
                 extractedCategory = category;
                 break;
             }
         }
 
-        // 提取帳戶類型
-        let extractedAccountType = '';
-        if (input.includes('現金') || input.includes('cash')) {
-            extractedAccountType = 'cash';
-        } else if (input.includes('銀行') || input.includes('卡')) {
-            extractedAccountType = 'bank';
-        } else if (input.includes('信用卡') || input.includes('credit')) {
-            extractedAccountType = 'credit';
-        } else if (input.includes('電子錢包') || input.includes('行動支付')) {
-            extractedAccountType = 'ewallet';
-        }
-
-        // 判斷交易類型
-        let extractedType: 'expense' | 'income' | 'transfer' | 'exchange' = 'expense';
-        if (extractedCategory === '薪資' || extractedCategory === '其他收入' || extractedCategory === '投資收益') {
-            extractedType = 'income';
-        } else if (input.includes('轉帳') || input.includes('轉給')) {
-            extractedType = 'transfer';
-        } else if (input.includes('兌換') || input.includes('換匯')) {
-            extractedType = 'exchange';
-        }
-
-        // 自動填入表單
-        if (extractedAmount) {
-            setAmount(extractedAmount);
-        }
+        // 步驟5：設置分類
         if (extractedCategory && availableCategories.includes(extractedCategory)) {
             setCategory(extractedCategory);
         }
+
+        // 步驟6：判斷交易類型
+        let extractedType: 'expense' | 'income' | 'transfer' | 'exchange' = 'expense';
+        if (extractedCategory === '薪資' || extractedCategory === '其他收入' || extractedCategory === '投資收益') {
+            extractedType = 'income';
+        } else if (textPart.includes('轉帳') || textPart.includes('轉給') || textPart.includes('zhuanzhang') || textPart.includes('zhuan')) {
+            extractedType = 'transfer';
+        } else if (textPart.includes('兌換') || textPart.includes('換匯') || textPart.includes('duihuan') || textPart.includes('huanhui')) {
+            extractedType = 'exchange';
+        }
+
+        // 步驟7：設置交易類型
         if (extractedType) {
             setType(extractedType);
         }
-        if (extractedAccountType) {
+
+        // 步驟8：判斷帳戶類型
+        let extractedAccountType = '';
+        if (textPart.includes('現金') || textPart.includes('cash') || textPart.includes('xianjin')) {
+            extractedAccountType = 'cash';
+        } else if (textPart.includes('銀行') || textPart.includes('卡') || textPart.includes('yinhang') || textPart.includes('ka')) {
+            extractedAccountType = 'bank';
+        } else if (textPart.includes('信用卡') || textPart.includes('credit') || textPart.includes('xinyongka')) {
+            extractedAccountType = 'credit';
+        } else if (textPart.includes('電子錢包') || textPart.includes('行動支付') || textPart.includes('dianziqianbao') || textPart.includes('xingdongzhifu')) {
+            extractedAccountType = 'ewallet';
+        }
+
+        // 步驟9：設置帳戶
+        if (extractedAccountType && !accountId) {
             const matchingAccount = availableAccounts.find(acc => acc.type === extractedAccountType);
             if (matchingAccount) {
                 setAccountId(matchingAccount.id);
             }
         }
+    };
 
-        // 如果沒有找到分類，使用輸入文字作為備註
-        if (!extractedCategory && !extractedAmount) {
-            setNote(input);
-        } else if (input.replace(/\d+/g, '').trim()) {
-            // 提取非數字部分作為備註
-            const noteText = input.replace(/\d+(?:\.\d+)?\s*(元|塊)?/g, '').trim();
-            if (noteText && !categoryKeywords[noteText]) {
-                setNote(noteText);
+    // 清理定時器
+    useEffect(() => {
+        return () => {
+            if (parseTimeoutRef.current) {
+                clearTimeout(parseTimeoutRef.current);
             }
+        };
+    }, []);
+
+    // 處理智慧輸入清空的函數
+    const handleSmartInputClear = () => {
+        // 重置由智慧輸入設置的欄位
+        // 保留用戶手動輸入的內容，只重置智慧輸入設置的內容
+        
+        // 檢查金額是否由智慧輸入設置（簡單判斷：如果金額欄位有值且智慧輸入框為空）
+        if (amount) {
+            // 可以選擇性清空，或者保留讓用戶手動處理
+            // 這裡我們清空，因為用戶清空智慧輸入通常表示要重新開始
+            setAmount('');
         }
+        
+        // 清空備註（因為備註是由智慧輸入的文字部分設置的）
+        setNote('');
+        
+        // 重置分類到預設值
+        setCategory('');
+        
+        // 重置交易類型到預設值
+        setType('expense');
+        
+        // 帳戶保持不變，因為帳戶通常是用戶選擇的
+        // 如果需要也可以重置：setAccountId('');
     };
 
     // Transfer/Exchange Fields
@@ -259,11 +331,13 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, o
         setIsSubmitting(true);
         setErrorMessage('');
 
+        const startTime = performance.now(); // 開始計時
+
         try {
             // 將選擇的日期轉換為時間戳
             const transactionTimestamp = transactionDate ? new Date(transactionDate).getTime() : Date.now();
 
-            // 使用新的區塊鏈格式保存交易
+            // 使用優化的區塊鏈格式保存交易
             await blockchainTransactionService.saveTransaction(
                 type,
                 numAmount,
@@ -279,6 +353,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, o
                     date: transactionTimestamp
                 }
             );
+
+            const endTime = performance.now(); // 結束計時
+            const duration = endTime - startTime;
+            console.log(`⚡ 交易提交耗時: ${duration.toFixed(2)}ms`);
 
             // 重置表單
             setType('expense');
@@ -299,10 +377,27 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, o
             }, 2000);
 
         } catch (error: any) {
-            console.error('Transaction submission error:', error);
+            const endTime = performance.now();
+            const duration = endTime - startTime;
+            console.error(`❌ 交易提交失敗，耗時: ${duration.toFixed(2)}ms`, error);
+            
             let errorMsg = t('transaction.save_failed');
             
-            if (error.message.includes('network') || error.message.includes('fetch')) {
+            // 檢查是否為認證錯誤
+            const isAuthError = 
+                error.status === 401 || 
+                error.message === 'AUTH_EXPIRED' ||
+                error.result?.error?.code === 401 ||
+                error.result?.error?.message?.includes('Invalid Credentials') ||
+                error.body?.error?.code === 401 ||
+                error.body?.error?.message?.includes('Invalid Credentials');
+            
+            if (isAuthError) {
+                errorMsg = '登入已過期，請重新登入';
+                // 清除過期權杖
+                localStorage.removeItem('quickbook_google_token');
+                console.log('🔄 已清除過期權杖，請用戶重新登入');
+            } else if (error.message.includes('network') || error.message.includes('fetch')) {
                 errorMsg = t('transaction.network_error');
             } else if (error.message.includes('permission') || error.message.includes('unauthorized')) {
                 errorMsg = t('transaction.permission_error');
@@ -379,12 +474,38 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ initialData, o
                 <input
                     type="text"
                     value={smartInput}
-                    onChange={e => setSmartInput(e.target.value)}
+                    onChange={e => {
+                        const newValue = e.target.value;
+                        setSmartInput(newValue);
+                        
+                        // 如果輸入框有內容，立即解析
+                        if (newValue.trim()) {
+                            // 清除之前的定時器
+                            if (parseTimeoutRef.current) {
+                                clearTimeout(parseTimeoutRef.current);
+                            }
+                            
+                            // 立即解析
+                            parseSmartInput(newValue, true);
+                        } else {
+                            // 輸入框為空時，清除定時器並重置智慧輸入相關欄位
+                            if (parseTimeoutRef.current) {
+                                clearTimeout(parseTimeoutRef.current);
+                            }
+                            
+                            // 重置由智慧輸入設置的欄位
+                            // 保留用戶手動輸入的內容，只重置智慧輸入設置的內容
+                            handleSmartInputClear();
+                        }
+                    }}
                     onKeyDown={e => {
                         if (e.key === 'Enter') {
                             e.preventDefault();
-                            parseSmartInput(smartInput);
-                            setSmartInput('');
+                            // 按下 Enter 時不清空智慧輸入框，讓用戶可以繼續編輯
+                            // 只執行解析，不清空內容
+                            if (smartInput.trim()) {
+                                parseSmartInput(smartInput, true);
+                            }
                         }
                     }}
                     placeholder="晚餐100 / 捷運50元 / 薪水30000"

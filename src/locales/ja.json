@@ -2,7 +2,7 @@
     "app": {
         "title": "QuickBook",
         "subtitle": "分散型家計簿",
-        "version": "v1.10F.730203 • Value Build による製作 • Google Drive で保護",
+        "version": "V01.02.730216 • Value Build による製作 • Google Drive で保護",
         "welcome_back": "お帰りなさい",
         "sign_in_desc": "暗号化された台帳にアクセス",
         "sign_in_google": "Google でログイン",

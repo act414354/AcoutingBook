@@ -40,7 +40,8 @@ class DailyTransactionService {
             
             // 檢查是否已登入
             if (!simpleDriveService.isSignedIn()) {
-                throw new Error('用戶未登入，無法讀取檔案');
+                console.log('🔒 用戶未登入，跳過讀取每日交易檔案');
+                return [];
             }
 
             // 搜尋 QuickBook Data 資料夾
@@ -114,7 +115,13 @@ class DailyTransactionService {
             console.log(`✅ 總共讀取 ${allTransactions.length} 筆交易`);
             return allTransactions;
 
-        } catch (error) {
+        } catch (error: any) {
+            // 檢查是否為未登入錯誤
+            if (error.message === '用戶未登入，無法讀取檔案') {
+                console.log('🔒 用戶未登入，跳過讀取每日交易檔案');
+                return [];
+            }
+            
             console.error('❌ 讀取每日交易檔案失敗:', error);
             return [];
         }
